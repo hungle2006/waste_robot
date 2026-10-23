@@ -1,0 +1,86 @@
+........................................................................ [ 58%]
+......F............................................                      [100%]
+=================================== FAILURES ===================================
+___ test_early_range_does_not_bypass_invalid_or_unconfirmed_samples[invalid] ___
+
+robot = (<brain.Brain object at 0x7fb9a5127620>, <transport.SimTransport object at 0x7fb9a5127650>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-11/test_early_range_does_not_bypa1')
+kind = 'invalid'
+
+    @pytest.mark.parametrize('kind',['below','invalid'])
+    def test_early_range_does_not_bypass_invalid_or_unconfirmed_samples(robot,tmp_path,kind):
+        async def run():
+            b,hw,a,_=prepared(robot,tmp_path)
+            f=BoxToFFlow(a);f.last_obj=copy.deepcopy(a.target);f.last_obj['bbox_norm']=[0,.3,1,.7]
+            hw.tof_sample(240 if kind=='below' else 280,valid=kind!='invalid')
+            original=hw.request
+            def request(command):
+                if command=='STATUS':hw.tof_sample(240 if kind=='below' else 280,valid=kind!='invalid')
+                return original(command)
+            hw.request=request;b.start_monitor()
+            b.last_hw=hw.request('STATUS');b.updated=time.monotonic()
+            n=len(hw.commands)
+            with pytest.raises(NearHold):await f.sensor_approach('both_sides')
+            assert not f.tof_confirmed and a.final_authorized is None
+            assert not any(s.startswith(('G ','P ','S ')) for s in hw.commands[n:])
+            if f.tof_guard_armed:b.tof_guard(False,a.token)
+>       asyncio.run(run())
+
+tests/test_box_tof_recovery.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        b,hw,a,_=prepared(robot,tmp_path)
+        f=BoxToFFlow(a);f.last_obj=copy.deepcopy(a.target);f.last_obj['bbox_norm']=[0,.3,1,.7]
+        hw.tof_sample(240 if kind=='below' else 280,valid=kind!='invalid')
+        original=hw.request
+        def request(command):
+            if command=='STATUS':hw.tof_sample(240 if kind=='below' else 280,valid=kind!='invalid')
+            return original(command)
+        hw.request=request;b.start_monitor()
+        b.last_hw=hw.request('STATUS');b.updated=time.monotonic()
+        n=len(hw.commands)
+        with pytest.raises(NearHold):await f.sensor_approach('both_sides')
+        assert not f.tof_confirmed and a.final_authorized is None
+>       assert not any(s.startswith(('G ','P ','S ')) for s in hw.commands[n:])
+E       assert not True
+E        +  where True = any(<generator object test_early_range_does_not_bypass_invalid_or_unconfirmed_samples.<locals>.run.<locals>.<genexpr> at 0x7fb9a55de330>)
+
+tests/test_box_tof_recovery.py:96: AssertionError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_handoff · Box chạm cả hai mép trái/phải: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · Tiếp tục tiến theo nhịp; chưa có khoảng cách để gắp · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 1/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · Tiếp tục tiến theo nhịp; chưa có khoảng cách để gắp · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 2/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · Tiếp tục tiến theo nhịp; chưa có khoảng cách để gắp · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 3/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · Tiếp tục tiến theo nhịp; chưa có khoảng cách để gắp · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 4/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · Tiếp tục tiến theo nhịp; chưa có khoảng cách để gắp · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 5/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · Tiếp tục tiến theo nhịp; chưa có khoảng cách để gắp · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 6/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · Tiếp tục tiến theo nhịp; chưa có khoảng cách để gắp · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 7/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · Tiếp tục tiến theo nhịp; chưa có khoảng cách để gắp · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 8/40 · Vật khóa: can · BIN 4
+=============================== warnings summary ===============================
+tests/test_v39.py::test_raw_preview_no_snapshot_and_motion_config_guard
+  /workspace/scratch/afcbd1fb0e25/qa_venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_box_tof_recovery.py::test_early_range_does_not_bypass_invalid_or_unconfirmed_samples[invalid]
+1 failed, 122 passed, 1 warning in 168.09s (0:02:48)

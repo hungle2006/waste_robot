@@ -1,0 +1,108 @@
+{
+  "baseline_name": "waste_robot_v3_16_4_auto_continue_full_env (1).zip",
+  "baseline_sha256": "979ba55bf9c83780600715d733252ef33c410ad0ca299873535a3b1435f03e00",
+  "changed_existing_files": [
+    "README_CHAY_TRUOC.md",
+    "arduino/robot_control_v3/robot_control_v3.ino",
+    "arduino/vl53l1x_test/vl53l1x_test.ino",
+    "python/brain.py",
+    "python/check_system.py",
+    "python/main.py",
+    "python/robot_config.json",
+    "python/robot_params.py",
+    "python/server.py",
+    "python/transport.py",
+    "tests/firmware_host/Servo.h",
+    "tests/firmware_host/VL53L1X.h",
+    "tests/firmware_host/harness.cpp",
+    "tests/test_approach.py",
+    "tests/test_auto.py",
+    "tests/test_box_tof_flow.py",
+    "tests/test_confirmed_grasp.py",
+    "tests/test_control.py",
+    "tests/test_near.py",
+    "tests/test_pose_profile.py",
+    "tests/test_rear.py",
+    "tests/test_target_lock.py",
+    "tests/test_v311.py",
+    "tests/test_v381.py",
+    "tests/test_v39.py",
+    "tests/test_vl53_auto_ready_v3162.py",
+    "web/operator.html"
+  ],
+  "all_original_files_present": true,
+  "protected_identical_count": 78,
+  "production_auto_files_byte_identical": [
+    "python/auto_controller.py",
+    "python/box_tof_flow.py",
+    "python/operator_control.py",
+    "python/realtime_bridge.py",
+    "python/auto_config.json"
+  ],
+  "version": "3.16.10",
+  "configuration": {
+    "base": "user-uploaded V3.16.4 auto_continue",
+    "gift_pin": "Arduino Mega digital D4",
+    "gift_protocol": 3,
+    "gift_range_us": [
+      500,
+      2500
+    ],
+    "gift_initial_us": 2500,
+    "gift_open_us": 600,
+    "gift_return_us": 2500,
+    "gift_open_hold_ms": 800,
+    "grip_close_us": 2000,
+    "vl53_roi": [
+      10,
+      10
+    ],
+    "roi_center": 199,
+    "timing_budget_us": 50000,
+    "measurement_period_ms": 60,
+    "grasp_window_mm": [
+      250,
+      300
+    ],
+    "startup_behavior": "Retained automatic SEARCH on connect/RESUME from uploaded V3.16.4; D4 closes before SEARCH"
+  },
+  "validation": {
+    "full_suite_first_run": {
+      "tests": 482,
+      "passed": 480,
+      "failed": 2
+    },
+    "first_failures": [
+      [
+        "tests.test_camera_guides",
+        "test_modal_receives_only_original_jpeg"
+      ],
+      [
+        "tests.test_gift_d4_v3169",
+        "test_gift_d4_and_lid_p4_are_independent"
+      ]
+    ],
+    "resolution": [
+      "Installed httpx[socks] in QA environment as already required by project requirements",
+      "Updated imported gift test to wait for baseline automatic SEARCH before lid action"
+    ],
+    "focused_rerun": {
+      "passed": 36,
+      "failed": 0
+    },
+    "unique_cases_verified_passed": 482,
+    "aggregated_report": "v31610_verified_cases.xml; latest recorded result per case, not a separate full rerun",
+    "firmware_host": "actual sketch compiled and run with g++; ROI10 arguments, D4 actual attach pin, S4/P4 independence, D22 rejection, STOP/watchdog and bounds checked",
+    "offline_check_system": "passed",
+    "syntax": "Python AST and local web JavaScript passed",
+    "hardware_tested": false,
+    "AVR_board_compilation_performed": false
+  },
+  "frontend": {
+    "repository": "hungle2006/Waste_App",
+    "path": "app/components/MechanicalControl.tsx",
+    "checked_command": "GIFT DISPENSE",
+    "matches_python": true
+  },
+  "reference": "https://github.com/pololu/vl53l1x-arduino#library-reference"
+}

@@ -1,0 +1,67 @@
+........F............................................................... [ 82%]
+...............                                                          [100%]
+=================================== FAILURES ===================================
+___________ test_enough_distance_still_requires_d19_before_gripping ____________
+
+robot = (<brain.Brain object at 0x7fb35e5a93d0>, <transport.SimTransport object at 0x7fb35e5a9310>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-2/test_enough_distance_still_req0')
+
+    def test_enough_distance_still_requires_d19_before_gripping(robot, tmp_path):
+        async def run():
+            b, hw, a, _ = prepared(robot, tmp_path)
+            hw.state['joints'].update(targets_at(a.cfg['arm_path'], 2050))
+            cached_range(b, hw)
+            f = BoxToFFlow(a); f.last_obj = copy.deepcopy(a.target)
+            async def move(targets, *args, **kwargs):
+                hw.state['joints'].update(targets)
+                b.last_hw = hw.request('STATUS'); b.updated = time.monotonic()
+            a.move_targets = move
+            with pytest.raises(NearHold, match='D19'):
+                await f.sensor_approach()
+            assert f.tof_confirmed and f.stage == 'final_ir'
+            assert hw.state['joints']['d3'] == b.config['grip']['open']
+            assert not any(c.startswith('S 3 ') for c in hw.commands)
+>       asyncio.run(run())
+
+tests/test_vl53_auto_ready_v3162.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        b, hw, a, _ = prepared(robot, tmp_path)
+        hw.state['joints'].update(targets_at(a.cfg['arm_path'], 2050))
+        cached_range(b, hw)
+        f = BoxToFFlow(a); f.last_obj = copy.deepcopy(a.target)
+        async def move(targets, *args, **kwargs):
+            hw.state['joints'].update(targets)
+            b.last_hw = hw.request('STATUS'); b.updated = time.monotonic()
+        a.move_targets = move
+        with pytest.raises(NearHold, match='D19'):
+            await f.sensor_approach()
+        assert f.tof_confirmed and f.stage == 'final_ir'
+        assert hw.state['joints']['d3'] == b.config['grip']['open']
+>       assert not any(c.startswith('S 3 ') for c in hw.commands)
+E       assert not True
+E        +  where True = any(<generator object test_enough_distance_still_requires_d19_before_gripping.<locals>.run.<locals>.<genexpr> at 0x7fb35e301970>)
+
+tests/test_vl53_auto_ready_v3162.py:143: AssertionError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_handoff · Đạt2050/727: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=28.0cm · đủ khoảng cách gắp · Vật khóa: can · BIN 4
+AUTO · auto_distance_ready · Đã đạt khoảng cách 25–30 cm; chuẩn bị S1 → S2 → xoay → kẹp → nâng · Vật khóa: can · BIN 4
+AUTO · auto_tof_final_pose · VL53 xác nhận25–30cm; đưa tay từng bước tới2310/650, chờ D19 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_forward · Chờ D19: tiến 160ms, nhịp 1/3 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_forward · Chờ D19: tiến 160ms, nhịp 2/3 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_forward · Chờ D19: tiến 160ms, nhịp 3/3 · Vật khóa: can · BIN 4
+=========================== short test summary info ============================
+FAILED tests/test_vl53_auto_ready_v3162.py::test_enough_distance_still_requires_d19_before_gripping
+1 failed, 86 passed in 133.93s (0:02:13)

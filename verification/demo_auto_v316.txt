@@ -1,0 +1,80 @@
+MÔ PHỎNG OFFLINE: dùng mốc xung thật, ảnh và IR được tạo giả lập.
+AUTO · auto_search · Đưa tay về SEARCH; chỉ căn bánh khi tay đứng yên
+AUTO · auto_acquire · Đang xác nhận phân loại ban đầu · AUTO vẫn bật, bánh/tay đứng yên
+AUTO · auto_acquire · Đang xác nhận phân loại ban đầu · AUTO vẫn bật, bánh/tay đứng yên
+AUTO · auto_reacquire · Đã thấy vật; xác nhận thêm ảnh trước khi tiếp tục · AUTO vẫn bật, bánh/tay đứng yên · Vật khóa: can · BIN 4
+AUTO · auto_target_locked · Đã xác nhận vật đã khóa; tiếp tục AUTO · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 4 · Vật khóa: can · BIN 4
+AUTO · auto_sort · Phân loại BIN 4; đóng nắp rồi xoay đúng ngăn · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=45.5%; vùng cho phép 50.5%–64.5% · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_drive · FORWARD 400 ms danh định; dừng rồi lấy ảnh mới · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=55.5%; vùng cho phép 50.5%–64.5% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1300→1350, P10→935; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=54.4%; vùng cho phép 47.4%–61.4% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1350→1400, P10→920; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=51.3%; vùng cho phép 44.3%–58.3% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1400→1450, P10→906; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=48.2%; vùng cho phép 41.2%–55.2% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1450→1500, P10→891; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=45.1%; vùng cho phép 38.1%–52.1% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1500→1550, P10→876; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=42.0%; vùng cho phép 35.0%–49.0% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1550→1600, P10→861; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=48.3%; vùng cho phép 41.3%–55.3% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1600→1650, P10→846; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=54.5%; vùng cho phép 47.5%–61.5% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1650→1700, P10→831; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=60.7%; vùng cho phép 53.7%–67.7% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1700→1750, P10→816; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=66.9%; vùng cho phép 59.9%–73.9% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1750→1800, P10→801; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=73.1%; vùng cho phép 66.1%–80.1% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1800→1850, P10→786; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=72.5%; vùng cho phép 65.5%–79.5% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1850→1900, P10→771; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=71.9%; vùng cho phép 64.9%–78.9% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1900→1950, P10→757; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=71.2%; vùng cho phép 64.2%–78.2% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 1950→2000, P10→742; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=70.6%; vùng cho phép 63.6%–77.6% · Vật khóa: can · BIN 4
+AUTO · auto_tof_arm · Hạ tay P1 2000→2050, P10→727; dừng rồi kiểm tra ảnh · Vật khóa: can · BIN 4
+AUTO · auto_tof_handoff · Đạt2050/727: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=90.0cm · xác nhận 0/3 mẫu mới · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 1/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=68.0cm · xác nhận 0/3 mẫu mới · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 2/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=46.0cm · xác nhận 0/3 mẫu mới · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 3/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=28.0cm · xác nhận 1/3 mẫu mới · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=28.0cm · xác nhận 2/3 mẫu mới · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=28.0cm · xác nhận 3/3 mẫu mới · Vật khóa: can · BIN 4
+AUTO · auto_distance_ready · Đã đạt khoảng cách 25–30 cm; chuẩn bị S1 → S2 → xoay → kẹp → nâng · Vật khóa: can · BIN 4
+AUTO · auto_tof_final_pose · VL53 xác nhận25–30cm; đưa tay từng bước tới2310/650, chờ D19 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_forward · Chờ D19: tiến 160ms, nhịp 1/12 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_forward · Chờ D19: tiến 160ms, nhịp 2/12 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_ready · D19 ổn định tại2310/650; cho phép đóng kẹp · Vật khóa: can · BIN 4
+AUTO · auto_grip · Vật đã căn đúng và IR phát hiện; đóng kẹp · Vật khóa: can · BIN 4
+AUTO · auto_lift · Nâng S2 về SEARCH, giữ kẹp đóng · Vật khóa: can · BIN 4
+AUTO · auto_place · IR D19 vẫn thấy vật sau nâng · đưa vật tới BIN 4 đã xoay · Vật khóa: can · BIN 4
+AUTO · auto_open_lid · Đã gắp/nâng/đưa vật tới vị trí thả; mở nắp · Vật khóa: can · BIN 4
+AUTO · auto_release · Thả vật vào BIN 4 · Vật khóa: can · BIN 4
+AUTO · auto_cycle_done · Hoàn tất một lượt theo phản hồi hiện diện IR · Vật khóa: can · BIN 4
+AUTO · auto_done · AUTO hoàn tất; bánh đã dừng · Vật khóa: can · BIN 4
+KẾT QUẢ: auto_done; chu trình=1; thả mô phỏng=True
+Chưa xác nhận độ chính xác cơ khí/camera của robot thật.

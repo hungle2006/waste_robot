@@ -1,0 +1,48 @@
+D4 Arduino · quà: 600 → 2500 us; kẹp đóng: 2000 us; ROI10x10
+CẤU HÌNH PYTHON: HỢP LỆ
+SEARCH: {'p1': 1300, 'p10': 950, 'p11': 1250, 'd2': 2100, 'd3': 600}
+Đích gắp: {'p1': 2310, 'p10': 650, 'p11': 1250, 'd2': 2100}
+21 bước P1; bước danh định 50 µs, bước cuối 10 µs
+Nội suy P10 từng đoạn qua TẤT CẢ mốc xung, không phải góc cơ khí:
+  [1300,1550]: P10=950+(-74)*(P1-1300)/250
+  [1550,1800]: P10=876+(-75)*(P1-1550)/250
+  [1800,2050]: P10=801+(-74)*(P1-1800)/250
+  [2050,2310]: P10=727+(-77)*(P1-2050)/260
+  P1=1300, P10= 950
+  P1=1350, P10= 935
+  P1=1400, P10= 920
+  P1=1450, P10= 906
+  P1=1500, P10= 891
+  P1=1550, P10= 876
+  P1=1600, P10= 861
+  P1=1650, P10= 846
+  P1=1700, P10= 831
+  P1=1750, P10= 816
+  P1=1800, P10= 801
+  P1=1850, P10= 786
+  P1=1900, P10= 771
+  P1=1950, P10= 757
+  P1=2000, P10= 742
+  P1=2050, P10= 727
+  P1=2100, P10= 712
+  P1=2150, P10= 697
+  P1=2200, P10= 683
+  P1=2250, P10= 668
+  P1=2300, P10= 653
+  P1=2310, P10= 650
+V3.16.11: BOX CẬP NHẬT + VL53L1X + D19.
+  Chỉ FORWARD/LEFT/RIGHT; không lùi bánh trong luồng AUTO trước.
+  Đúng lock: 1 frame; mất/sai 3 frame mới: giữ chờ tại chỗ.
+  Đáy trên dải: tiến. Trong/dưới dải: hạ tay. Chạm mép trên/dưới: tiến.
+  Chạm một mép ngang: căn lại; box nhỏ: căn ngang rồi tiến; hai mép: tiếp cận VL53 ở tư thế hiện tại.
+  AUTO: VL53 đủ khoảng cách thì chuyển gắp tại tư thế hiện tại, không bắt buộc chờ thêm ảnh.
+  Tới 2050/727: ngừng nhận diện, tiến chậm 160ms thực thi/nhịp.
+  AUTO: 1 số đo VL53 hợp lệ 200–250mm ->2310/650; không kiểm tra tuổi mẫu ToF.
+  Đã chốt đủ khoảng cách: không hết hạn vì chậm báo trạng thái hoặc mẫu VL53 già đi.
+  AUTO: số đo lỗi/chưa có -> vẫn tiến theo nhịp; 1 số đo hợp lệ đủ khoảng -> gắp. Manual giữ xác nhận riêng.
+  Giới hạn thời gian/số nhịp, STOP, D18/D19 và USB vẫn áp dụng.
+  Cuối: 160ms/nhịp, D19 ổn định 300ms mới đóng kẹp.
+  Cần nạp firmware V3.16.11: VL53L1X Short / ROI10x10 / center199 / budget50ms / period60ms.
+  SDA20/SCL21 dùng chung PCA0x40 và VL530x29. Điện áp theo đúng module đang dùng.
+  FORWARD_MS=400 danh định ->560ms có ramp160; nhịp chậm/cuối160ms ->ramp80+80.
+  Không bổ sung model phân tích che khuất; chỉ đánh dấu nghi chạm mép bằng box mới.

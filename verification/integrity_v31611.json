@@ -1,0 +1,40 @@
+{
+  "baseline": "waste_robot_v3_16_10_from_v3164_d4_roi10_grip2000_full_env.zip",
+  "baseline_sha256": "e449adf39ab88a8d8718764e596401ebab5ef63dc60a912c7dadba81679ee98a",
+  "missing_baseline_files": [],
+  "protected_files_unchanged": 77,
+  "changed_files": [
+    "README_CHAY_TRUOC.md",
+    "arduino/robot_control_v3/robot_control_v3.ino",
+    "python/box_tof_flow.py",
+    "python/brain.py",
+    "python/check_system.py",
+    "python/demo_auto.py",
+    "python/gift_control.py",
+    "python/main.py",
+    "python/operator_control.py",
+    "python/robot_params.py",
+    "python/server.py",
+    "python/transport.py",
+    "tests/firmware_host/harness.cpp",
+    "tests/test_box_tof_flow.py",
+    "tests/test_box_tof_recovery.py",
+    "tests/test_gift_d4_v3169.py",
+    "tests/test_operator_v316.py",
+    "tests/test_roi10_gift_v31610.py",
+    "tests/test_vl53_auto_ready_v3162.py",
+    "tests/test_vl53_continue_v3164.py",
+    "web/operator.html"
+  ],
+  "physical_robot_tested": false,
+  "distance_mm": [
+    200,
+    250
+  ],
+  "roi": [
+    10,
+    10
+  ],
+  "gift_pin": 4,
+  "grip_close_us": 2000
+}

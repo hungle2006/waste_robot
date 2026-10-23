@@ -1,0 +1,46 @@
+{
+  "baseline": "waste_robot_v3_16_13_early_ir_full_lower_full_env.zip",
+  "baseline_sha256": "2ae6a1efd1f8216abd3c2fc60c352995f6e085ad7089fee4aef4bcbbc7eccdb4",
+  "baseline_files_missing": [],
+  "protected_files_byte_identical": 82,
+  "changed_files": [
+    "README_CHAY_TRUOC.md",
+    "python/check_system.py",
+    "python/main.py",
+    "python/robot_config.json",
+    "python/robot_params.py",
+    "python/server.py",
+    "tests/test_approach.py",
+    "tests/test_auto.py",
+    "tests/test_box_tof_flow.py",
+    "tests/test_confirmed_grasp.py",
+    "tests/test_control.py",
+    "tests/test_early_ir_handoff_v31613.py",
+    "tests/test_ir_after_lower_v31612.py",
+    "tests/test_near.py",
+    "tests/test_pose_profile.py",
+    "tests/test_rear.py",
+    "tests/test_roi10_gift_v31610.py",
+    "tests/test_target_lock.py",
+    "tests/test_v311.py",
+    "tests/test_v381.py",
+    "tests/test_v39.py",
+    "tests/test_vl53_auto_ready_v3162.py",
+    "web/operator.html"
+  ],
+  "verified_related_cases": 132,
+  "physical_robot_tested": false,
+  "real_browser_visual_tested": false,
+  "grip_close_us": 2300,
+  "grip_open_us": 600,
+  "distance_window_mm": [
+    200,
+    250
+  ],
+  "roi": [
+    10,
+    10
+  ],
+  "gift_pin": 4,
+  "ui_default_url": "http://127.0.0.1:8766/control"
+}

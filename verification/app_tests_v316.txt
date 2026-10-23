@@ -1,0 +1,28 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> waste-robot-control@1.0.0 test
+> vitest run
+
+
+ RUN  v3.2.4 /workspace/scratch/afcbd1fb0e25/waste-app-src
+
+ ✓ tests/operator.test.tsx (15 tests) 11854ms
+   ✓ Operator controls with robot ACK > green locks manual, red keeps AUTO and permits D2, no toggle notice  1573ms
+   ✓ Operator controls with robot ACK > shows range only after robot confirmation; routes grasp/release/STOP  1325ms
+   ✓ Operator controls with robot ACK > keyboard wheel release sends XM and preserves red AUTO  613ms
+   ✓ Operator controls with robot ACK > switching control groups releases held wheels and preserves joint drafts  757ms
+   ✓ Operator controls with robot ACK > keeps the same camera and robot session when switching modes and control groups  899ms
+   ✓ Operator controls with robot ACK > 10-degree controls work in manual and red AUTO (autoMode=false)  727ms
+   ✓ Operator controls with robot ACK > 10-degree controls work in manual and red AUTO (autoMode=true)  796ms
+   ✓ Operator controls with robot ACK > locks 10-degree buttons at physical bounds and while Auto owns mechanics  668ms
+   ✓ Operator controls with robot ACK > sensor grasp needs backend readiness without a camera target (autoMode=false)  564ms
+   ✓ Operator controls with robot ACK > sensor grasp needs backend readiness without a camera target (autoMode=true)  567ms
+   ✓ Operator controls with robot ACK > routes hold, lift and release independently of the selected screen mode  744ms
+   ✓ Operator controls with robot ACK > V3.15 keeps existing controls but cannot send V3.16 operator commands  485ms
+   ✓ Operator controls with robot ACK > hold cancels the held wheel refresh timer  1821ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  19:36:28
+   Duration  16.49s (transform 744ms, setup 0ms, collect 1.43s, tests 11.85s, environment 1.04s, prepare 845ms)
+

@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="138" time="121.579" timestamp="2026-10-21T09:53:01.390950-05:00" hostname="dd67e7c6c248"><testcase classname="tests.test_distance_window_v31611" name="test_all_config_sources_agree" time="0.013"><failure message="auto_controller.AutoFault: Sai stop_forward_cm: cần đo tầm gắp thực tế">path = PosixPath('/workspace/scratch/afcbd1fb0e25/range20_25_work/waste_robot_complete/python/auto_config.json')
+robot_config = {'limits': {'p1': [500, 3500], 'p10': [500, 2500], 'p11': [500, 2500], 'p9': [500, 2500], ...}, 'step_us': 20, 'step_ms': 40, 'settle_ms': 300, ...}
+
+    def load_auto_config(path, robot_config):
+        c = read_config(path)
+        if c.get('version') not in (1,2,3): raise AutoFault('Sai phiên bản auto_config.json')
+        cal, control = c['calibration'], c['control']
+        frame = cal['frame_size']
+        if len(frame) != 2 or any(type(v) is not int or v &lt; 16 for v in frame):
+            raise AutoFault('Sai kích thước ảnh hiệu chuẩn')
+        for name, lo, hi in [('speed',1,255),('move_ms',50,400),('s2_step_us',1,50),
+                             ('settle_ms',100,3000),('stable_samples',2,10),
+                             ('max_align_moves_per_stage',1,100),('max_cycles',1,100),
+                             ('max_no_target_attempts',1,100),('no_target_retry_ms',100,10000)]:
+            value = control[name]
+            if type(value) is not int or not lo &lt;= value &lt;= hi: raise AutoFault('Sai tham số '+name)
+        for name, lo, hi in [('max_target_jump_normalized',.01,.5),('inference_timeout_s',1,180),
+                             ('max_result_age_s',.1,60),('max_cycle_s',10,3600)]:
+            value = control[name]
+            if type(value) not in (int,float) or not math.isfinite(value) or not lo &lt;= value &lt;= hi:
+                raise AutoFault('Sai tham số '+name)
+        if type(control['repeat']) is not bool: raise AutoFault('repeat phải là boolean')
+        mode = cal.get('mode','calibrated')
+        if mode not in ('relative','calibrated'): raise AutoFault('Sai chế độ căn ảnh')
+        cal['mode'] = mode
+        if mode == 'relative':
+            search = robot_config['poses']['SEARCH']
+            final = cal['grasp_final_s2_us']
+            if type(final) is not int or not search['p1'] &lt; final &lt;= robot_config['limits']['p1'][1]:
+                raise AutoFault('Giới hạn hạ S2 phải lớn hơn SEARCH và trong giới hạn P1')
+            goal = {'target_norm':cal['relative_target_norm'],'tolerance_norm':cal['relative_tolerance_norm']}
+            relative_stage(goal,frame)  # Validate the approximate reference, not a measured contact point.
+            response = control.get('relative_min_response_norm',.01)
+            retries = control.get('relative_max_no_response',3)
+            if type(response) not in (int,float) or not math.isfinite(response) or not .002 &lt;= response &lt;= .05:
+                raise AutoFault('Sai ngưỡng phản hồi ảnh tương đối')
+            if type(retries) is not int or not 1 &lt;= retries &lt;= 5: raise AutoFault('Sai giới hạn thử phản hồi ảnh')
+            control.update(relative_min_response_norm=response,relative_max_no_response=retries)
+            cal['frozen_joints_us'] = {j:search[j] for j in ('p10','p11','d2')}
+            cal['positive_error_x_move'] = cal.get('positive_error_x_move') or 'RIGHT'
+            cal['positive_error_y_move'] = cal.get('positive_error_y_move') or 'BACK'
+            # Runtime references only. Do not write these as physically calibrated stages.
+            cal['stages'] = [relative_stage(dict(goal,s2_us=pulse),frame) for pulse in (search['p1'],final)]
+        missing = []
+        frozen = cal['frozen_joints_us']
+        if set(frozen) != {'p10','p11','d2'}: missing.append('xung cố định S1/P10, trụ/P11, nối/D2')
+        for j,v in frozen.items():
+            if j not in ('p10','p11','d2') or type(v) is not int or not robot_config['limits'][j][0] &lt;= v &lt;= robot_config['limits'][j][1]:
+                raise AutoFault('Xung cố định không hợp lệ: '+j)
+        search = robot_config['poses']['SEARCH']
+        for j,v in frozen.items():
+            if search.get(j) != v: raise AutoFault('SEARCH đã đổi '+j+'; hiệu chuẩn lại AUTO theo tư thế mới')
+        if cal['positive_error_x_move'] not in ('LEFT','RIGHT'): missing.append('chiều căn ngang theo ảnh')
+        if cal['positive_error_y_move'] not in ('FORWARD','BACK'): missing.append('chiều căn dọc theo ảnh')
+        stages = [relative_stage(stage,frame) for stage in cal['stages']]
+        cal['stages'] = stages
+        if not stages: missing.append('các mốc S2 và điểm pixel mục tiêu')
+        previous = None
+        direction = None
+        for i,stage in enumerate(stages):
+            pulse = stage['s2_us']
+            if type(pulse) is not int or not robot_config['limits']['p1'][0] &lt;= pulse &lt;= robot_config['limits']['p1'][1]:
+                raise AutoFault('Xung S2 ngoài giới hạn')
+            if i == 0 and pulse != search['p1']: raise AutoFault('Mốc đầu phải trùng S2 trong SEARCH')
+            if previous is not None:
+                delta = pulse-previous
+                if not delta or (direction is not None and delta*direction &lt;= 0):
+                    raise AutoFault('Các mốc S2 phải theo một chiều, không trùng')
+                direction = delta
+            previous = pulse
+            for field, high in [('target_px',frame),('tolerance_px',[frame[0]/4,frame[1]/4])]:
+                vals = stage[field]
+                if len(vals) != 2 or any(type(v) not in (int,float) or not math.isfinite(v) for v in vals):
+                    raise AutoFault('Sai điểm mục tiêu/vùng sai số')
+                for v,limit in zip(vals,high):
+                    if not (0 &lt; v &lt; limit): raise AutoFault('Điểm/vùng sai số nằm ngoài ảnh')
+        final = cal['grasp_final_s2_us']
+        if type(final) is not int or not robot_config['limits']['p1'][0] &lt;= final &lt;= robot_config['limits']['p1'][1]:
+            raise AutoFault('Xung gắp cuối ngoài giới hạn')
+        if stages and stages[-1]['s2_us'] != final:
+            raise AutoFault('Mốc cuối phải là tư thế gắp thực tế đã đo, không chỉ tư thế 90 độ')
+        for name in ('contact_sensor','hold_sensor'):
+            if sensor_pin(cal[name]) is None: missing.append(name+' (IR hiện tại nối D19 Mega; P15 PCA không đọc cảm biến)')
+        if type(cal['active_level']) is not int or cal['active_level'] not in (0,1):
+            raise AutoFault('Sai mức kích hoạt IR')
+        hold_ms = cal['grasp_hold_confirm_ms']
+        if type(hold_ms) is not int or not 200 &lt;= hold_ms &lt;= 3000: raise AutoFault('Sai thời gian xác nhận giữ vật')
+        if missing: raise AutoFault('Cần hiệu chuẩn: '+ '; '.join(missing)+'. Chạy python calibrate_auto.py --help')
+        try: c['arm_path'] = validate_path(c.get('arm_path'),robot_config,final)
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        try: c['confirmed_grasp'] = checked_reference(c.get('confirmed_grasp'),c['arm_path'])
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        c['rear'] = rear_config(c.get('rear',{}))
+        c['near'] = near_config(c.get('near',{}))
+        c['approach'] = approach_config(c.get('approach',{}),c['near'])
+        c['tracking'] = tracking_config(c.get('tracking',{}))
+        try: c['target_lock'] = lock_config(c.get('target_lock',{}))
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        try:
+            c['motion']=checked_settings(c.get('motion',{}),MOTION_DEFAULTS)
+            c['visibility']=checked_settings(c.get('visibility',{}),VISIBILITY_DEFAULTS)
+        except ValueError as exc:raise AutoFault(str(exc)) from exc
+        if c['visibility']['enabled'] and (not c['approach']['enabled'] or cal['mode']!='relative' or not c['motion']['enabled']):
+            raise AutoFault('Giữ ảnh cần approach relative và motion.enabled=true')
+        if c['visibility']['min_step_us']&gt;c['motion']['arm_step_us']:raise AutoFault('Bước tối thiểu lớn hơn bước tay')
+        if c['approach']['enabled'] and cal['mode']!='relative':
+            raise AutoFault('Tiến gần tách giai đoạn cần mode relative; tắt approach.enabled khi dùng mốc calibrated')
+        try:
+            from camera_publisher import CAMERA_INDEX
+&gt;           c['distance'] = distance_config(c.get('distance', {}), robot_config, CAMERA_INDEX)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/auto_controller.py:314: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/floor_distance.py:88: in distance_config
+    c['stop_forward_cm'] = finite(c['stop_forward_cm'], 3, 200, 'stop_forward_cm: cần đo tầm gắp thực tế')
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = None, lo = 3, hi = 200, name = 'stop_forward_cm: cần đo tầm gắp thực tế'
+
+    def finite(value, lo, hi, name):
+        if type(value) not in (int, float) or not math.isfinite(value) or not lo &lt;= value &lt;= hi:
+&gt;           raise ValueError('Sai ' + name)
+E           ValueError: Sai stop_forward_cm: cần đo tầm gắp thực tế
+
+python/floor_distance.py:16: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    def test_all_config_sources_agree():
+        robot_cfg = read_config(ROOT/'python/robot_params.py', 'robot')
+        for name in ('robot_params.py', 'auto_config.json'):
+&gt;           cfg = load_auto_config(ROOT/'python'/name, robot_cfg)['box_tof_flow']
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_distance_window_v31611.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('/workspace/scratch/afcbd1fb0e25/range20_25_work/waste_robot_complete/python/auto_config.json')
+robot_config = {'limits': {'p1': [500, 3500], 'p10': [500, 2500], 'p11': [500, 2500], 'p9': [500, 2500], ...}, 'step_us': 20, 'step_ms': 40, 'settle_ms': 300, ...}
+
+    def load_auto_config(path, robot_config):
+        c = read_config(path)
+        if c.get('version') not in (1,2,3): raise AutoFault('Sai phiên bản auto_config.json')
+        cal, control = c['calibration'], c['control']
+        frame = cal['frame_size']
+        if len(frame) != 2 or any(type(v) is not int or v &lt; 16 for v in frame):
+            raise AutoFault('Sai kích thước ảnh hiệu chuẩn')
+        for name, lo, hi in [('speed',1,255),('move_ms',50,400),('s2_step_us',1,50),
+                             ('settle_ms',100,3000),('stable_samples',2,10),
+                             ('max_align_moves_per_stage',1,100),('max_cycles',1,100),
+                             ('max_no_target_attempts',1,100),('no_target_retry_ms',100,10000)]:
+            value = control[name]
+            if type(value) is not int or not lo &lt;= value &lt;= hi: raise AutoFault('Sai tham số '+name)
+        for name, lo, hi in [('max_target_jump_normalized',.01,.5),('inference_timeout_s',1,180),
+                             ('max_result_age_s',.1,60),('max_cycle_s',10,3600)]:
+            value = control[name]
+            if type(value) not in (int,float) or not math.isfinite(value) or not lo &lt;= value &lt;= hi:
+                raise AutoFault('Sai tham số '+name)
+        if type(control['repeat']) is not bool: raise AutoFault('repeat phải là boolean')
+        mode = cal.get('mode','calibrated')
+        if mode not in ('relative','calibrated'): raise AutoFault('Sai chế độ căn ảnh')
+        cal['mode'] = mode
+        if mode == 'relative':
+            search = robot_config['poses']['SEARCH']
+            final = cal['grasp_final_s2_us']
+            if type(final) is not int or not search['p1'] &lt; final &lt;= robot_config['limits']['p1'][1]:
+                raise AutoFault('Giới hạn hạ S2 phải lớn hơn SEARCH và trong giới hạn P1')
+            goal = {'target_norm':cal['relative_target_norm'],'tolerance_norm':cal['relative_tolerance_norm']}
+            relative_stage(goal,frame)  # Validate the approximate reference, not a measured contact point.
+            response = control.get('relative_min_response_norm',.01)
+            retries = control.get('relative_max_no_response',3)
+            if type(response) not in (int,float) or not math.isfinite(response) or not .002 &lt;= response &lt;= .05:
+                raise AutoFault('Sai ngưỡng phản hồi ảnh tương đối')
+            if type(retries) is not int or not 1 &lt;= retries &lt;= 5: raise AutoFault('Sai giới hạn thử phản hồi ảnh')
+            control.update(relative_min_response_norm=response,relative_max_no_response=retries)
+            cal['frozen_joints_us'] = {j:search[j] for j in ('p10','p11','d2')}
+            cal['positive_error_x_move'] = cal.get('positive_error_x_move') or 'RIGHT'
+            cal['positive_error_y_move'] = cal.get('positive_error_y_move') or 'BACK'
+            # Runtime references only. Do not write these as physically calibrated stages.
+            cal['stages'] = [relative_stage(dict(goal,s2_us=pulse),frame) for pulse in (search['p1'],final)]
+        missing = []
+        frozen = cal['frozen_joints_us']
+        if set(frozen) != {'p10','p11','d2'}: missing.append('xung cố định S1/P10, trụ/P11, nối/D2')
+        for j,v in frozen.items():
+            if j not in ('p10','p11','d2') or type(v) is not int or not robot_config['limits'][j][0] &lt;= v &lt;= robot_config['limits'][j][1]:
+                raise AutoFault('Xung cố định không hợp lệ: '+j)
+        search = robot_config['poses']['SEARCH']
+        for j,v in frozen.items():
+            if search.get(j) != v: raise AutoFault('SEARCH đã đổi '+j+'; hiệu chuẩn lại AUTO theo tư thế mới')
+        if cal['positive_error_x_move'] not in ('LEFT','RIGHT'): missing.append('chiều căn ngang theo ảnh')
+        if cal['positive_error_y_move'] not in ('FORWARD','BACK'): missing.append('chiều căn dọc theo ảnh')
+        stages = [relative_stage(stage,frame) for stage in cal['stages']]
+        cal['stages'] = stages
+        if not stages: missing.append('các mốc S2 và điểm pixel mục tiêu')
+        previous = None
+        direction = None
+        for i,stage in enumerate(stages):
+            pulse = stage['s2_us']
+            if type(pulse) is not int or not robot_config['limits']['p1'][0] &lt;= pulse &lt;= robot_config['limits']['p1'][1]:
+                raise AutoFault('Xung S2 ngoài giới hạn')
+            if i == 0 and pulse != search['p1']: raise AutoFault('Mốc đầu phải trùng S2 trong SEARCH')
+            if previous is not None:
+                delta = pulse-previous
+                if not delta or (direction is not None and delta*direction &lt;= 0):
+                    raise AutoFault('Các mốc S2 phải theo một chiều, không trùng')
+                direction = delta
+            previous = pulse
+            for field, high in [('target_px',frame),('tolerance_px',[frame[0]/4,frame[1]/4])]:
+                vals = stage[field]
+                if len(vals) != 2 or any(type(v) not in (int,float) or not math.isfinite(v) for v in vals):
+                    raise AutoFault('Sai điểm mục tiêu/vùng sai số')
+                for v,limit in zip(vals,high):
+                    if not (0 &lt; v &lt; limit): raise AutoFault('Điểm/vùng sai số nằm ngoài ảnh')
+        final = cal['grasp_final_s2_us']
+        if type(final) is not int or not robot_config['limits']['p1'][0] &lt;= final &lt;= robot_config['limits']['p1'][1]:
+            raise AutoFault('Xung gắp cuối ngoài giới hạn')
+        if stages and stages[-1]['s2_us'] != final:
+            raise AutoFault('Mốc cuối phải là tư thế gắp thực tế đã đo, không chỉ tư thế 90 độ')
+        for name in ('contact_sensor','hold_sensor'):
+            if sensor_pin(cal[name]) is None: missing.append(name+' (IR hiện tại nối D19 Mega; P15 PCA không đọc cảm biến)')
+        if type(cal['active_level']) is not int or cal['active_level'] not in (0,1):
+            raise AutoFault('Sai mức kích hoạt IR')
+        hold_ms = cal['grasp_hold_confirm_ms']
+        if type(hold_ms) is not int or not 200 &lt;= hold_ms &lt;= 3000: raise AutoFault('Sai thời gian xác nhận giữ vật')
+        if missing: raise AutoFault('Cần hiệu chuẩn: '+ '; '.join(missing)+'. Chạy python calibrate_auto.py --help')
+        try: c['arm_path'] = validate_path(c.get('arm_path'),robot_config,final)
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        try: c['confirmed_grasp'] = checked_reference(c.get('confirmed_grasp'),c['arm_path'])
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        c['rear'] = rear_config(c.get('rear',{}))
+        c['near'] = near_config(c.get('near',{}))
+        c['approach'] = approach_config(c.get('approach',{}),c['near'])
+        c['tracking'] = tracking_config(c.get('tracking',{}))
+        try: c['target_lock'] = lock_config(c.get('target_lock',{}))
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        try:
+            c['motion']=checked_settings(c.get('motion',{}),MOTION_DEFAULTS)
+            c['visibility']=checked_settings(c.get('visibility',{}),VISIBILITY_DEFAULTS)
+        except ValueError as exc:raise AutoFault(str(exc)) from exc
+        if c['visibility']['enabled'] and (not c['approach']['enabled'] or cal['mode']!='relative' or not c['motion']['enabled']):
+            raise AutoFault('Giữ ảnh cần approach relative và motion.enabled=true')
+        if c['visibility']['min_step_us']&gt;c['motion']['arm_step_us']:raise AutoFault('Bước tối thiểu lớn hơn bước tay')
+        if c['approach']['enabled'] and cal['mode']!='relative':
+            raise AutoFault('Tiến gần tách giai đoạn cần mode relative; tắt approach.enabled khi dùng mốc calibrated')
+        try:
+            from camera_publisher import CAMERA_INDEX
+            c['distance'] = distance_config(c.get('distance', {}), robot_config, CAMERA_INDEX)
+            if c['distance']['enabled'] and (not c['approach']['enabled'] or cal['mode'] != 'relative'):
+                raise ValueError('Khoảng cách cm cần approach.enabled và mode relative')
+&gt;       except (ValueError, KeyError, TypeError) as exc: raise AutoFault(str(exc)) from exc
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       auto_controller.AutoFault: Sai stop_forward_cm: cần đo tầm gắp thực tế
+
+python/auto_controller.py:317: AutoFault</failure></testcase><testcase classname="tests.test_distance_window_v31611" name="test_inclusive_window_authorizes_grasp[200]" time="0.191" /><testcase classname="tests.test_distance_window_v31611" name="test_inclusive_window_authorizes_grasp[225]" time="0.179" /><testcase classname="tests.test_distance_window_v31611" name="test_inclusive_window_authorizes_grasp[250]" time="0.186" /><testcase classname="tests.test_distance_window_v31611" name="test_outside_window_never_authorizes_grasp[199]" time="0.158" /><testcase classname="tests.test_distance_window_v31611" name="test_outside_window_never_authorizes_grasp[251]" time="0.160" /><testcase classname="tests.test_roi10_gift_v31610" name="test_default_gift_pulses_grip_and_uploaded_distance_window" time="1.802" /><testcase classname="tests.test_roi10_gift_v31610" name="test_old_roi_firmware_rejected_before_auto_drive[None]" time="0.171" /><testcase classname="tests.test_roi10_gift_v31610" name="test_old_roi_firmware_rejected_before_auto_drive[8]" time="0.168" /><testcase classname="tests.test_roi10_gift_v31610" name="test_old_roi_firmware_rejected_before_auto_drive[16]" time="0.156" /><testcase classname="tests.test_roi10_gift_v31610" name="test_correct_roi_keeps_continue_on_invalid_policy" time="0.152" /><testcase classname="tests.test_vl53_continue_v3164" name="test_camera_forward_completes_pulse_without_valid_range[invalid]" time="0.546" /><testcase classname="tests.test_vl53_continue_v3164" name="test_camera_forward_completes_pulse_without_valid_range[missing]" time="0.545" /><testcase classname="tests.test_vl53_continue_v3164" name="test_sensor_phase_moves_then_hands_off_on_first_valid_window[invalid]" time="0.594" /><testcase classname="tests.test_vl53_continue_v3164" name="test_sensor_phase_moves_then_hands_off_on_first_valid_window[missing]" time="0.572" /><testcase classname="tests.test_vl53_continue_v3164" name="test_no_ready_range_never_authorizes_grasp_and_pulse_limit_still_applies[invalid]" time="1.036" /><testcase classname="tests.test_vl53_continue_v3164" name="test_no_ready_range_never_authorizes_grasp_and_pulse_limit_still_applies[unchanged_far]" time="1.105" /><testcase classname="tests.test_vl53_continue_v3164" name="test_old_firmware_cannot_silently_use_new_auto_policy" time="0.174" /><testcase classname="tests.test_vl53_continue_v3164" name="test_stop_during_invalid_range_drive_cannot_issue_late_motion" time="0.342" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_auto_range_ignores_age_but_default_manual_reader_stays_strict[300]" time="0.173" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_auto_range_ignores_age_but_default_manual_reader_stays_strict[5000]" time="0.154" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_auto_range_ignores_age_but_default_manual_reader_stays_strict[None]" time="0.172" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_auto_accepts_one_in_range_sample_without_new_sequence_or_window_streak" time="0.177" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_auto_handover_does_not_expire_while_reporting_or_disabling_tof" time="0.483" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_auto_checks_ready_distance_before_waiting_for_another_camera_action" time="0.179" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_cached_far_reading_recovers_when_range_arrives_after_old_fault_deadline" time="1.427" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_stop_after_distance_confirmation_still_prevents_arm_motion" time="0.178" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_enough_distance_still_requires_d19_before_gripping" time="1.415" /><testcase classname="tests.test_vl53_auto_ready_v3162" name="test_complete_auto_grasp_lift_release_with_old_in_range_tof_metadata" time="15.938" /><testcase classname="tests.test_operator_v316" name="test_inverse_calibration_is_piecewise_not_a_single_scale[-90]" time="0.001" /><testcase classname="tests.test_operator_v316" name="test_inverse_calibration_is_piecewise_not_a_single_scale[-80]" time="0.001" /><testcase classname="tests.test_operator_v316" name="test_inverse_calibration_is_piecewise_not_a_single_scale[-45]" time="0.001" /><testcase classname="tests.test_operator_v316" name="test_inverse_calibration_is_piecewise_not_a_single_scale[-10]" time="0.000" /><testcase classname="tests.test_operator_v316" name="test_inverse_calibration_is_piecewise_not_a_single_scale[0]" time="0.000" /><testcase classname="tests.test_operator_v316" name="test_inverse_calibration_is_piecewise_not_a_single_scale[10]" time="0.000" /><testcase classname="tests.test_operator_v316" name="test_inverse_calibration_is_piecewise_not_a_single_scale[30]" time="0.000" /><testcase classname="tests.test_operator_v316" name="test_inverse_calibration_is_piecewise_not_a_single_scale[60]" time="0.000" /><testcase classname="tests.test_operator_v316" name="test_unknown_wrist_position_is_rejected[499]" time="0.000" /><testcase classname="tests.test_operator_v316" name="test_unknown_wrist_position_is_rejected[2501]" time="0.000" /><testcase classname="tests.test_operator_v316" name="test_unknown_wrist_position_is_rejected[True]" time="0.000" /><testcase classname="tests.test_operator_v316" name="test_unknown_wrist_position_is_rejected[None]" time="0.001" /><testcase classname="tests.test_operator_v316" name="test_unknown_wrist_position_is_rejected[nan]" time="0.000" /><testcase classname="tests.test_operator_v316" name="test_wrist_steps_accumulate_from_ack_and_do_not_wrap_right_limit" time="0.522" /><testcase classname="tests.test_operator_v316" name="test_wrist_never_races_busy_auto_or_stale_epoch" time="0.173" /><testcase classname="tests.test_operator_v316" name="test_manual_range_readiness_needs_new_samples_and_resets_after_motion" time="0.151" /><testcase classname="tests.test_operator_v316" name="test_sensor_grasp_rejects_unready_without_moving[range]" time="0.172" /><testcase classname="tests.test_operator_v316" name="test_sensor_grasp_rejects_unready_without_moving[pose]" time="0.153" /><testcase classname="tests.test_operator_v316" name="test_sensor_grasp_rejects_unready_without_moving[stopped]" time="0.173" /><testcase classname="tests.test_operator_v316" name="test_sensor_grasp_rejects_unready_without_moving[moving]" time="0.154" /><testcase classname="tests.test_operator_v316" name="test_sensor_grasp_rejects_unready_without_moving[closed]" time="0.174" /><testcase classname="tests.test_operator_v316" name="test_sensor_grasp_rejects_unready_without_moving[rear]" time="0.154" /><testcase classname="tests.test_operator_v316" name="test_sensor_grasp_and_release_without_ai_keep_manual_wrist" time="9.752" /><testcase classname="tests.test_operator_v316" name="test_hold_cancels_manual_assist_and_keeps_pulses" time="0.315" /><testcase classname="tests.test_operator_v316" name="test_lift_open_gripper_preserves_angle" time="0.600" /><testcase classname="tests.test_operator_v316" name="test_wrist_packet_duplicate_is_only_one_step" time="0.176" /><testcase classname="tests.test_operator_v316" name="test_service_collects_manual_distance_without_camera_or_auto" time="0.633" /><testcase classname="tests.test_operator_v316" name="test_sensor_grasp_reads_usb_ir_again_before_lowering" time="0.161" /><testcase classname="tests.test_operator_v316" name="test_sensor_grasp_cannot_claim_after_epoch_changes_during_validation" time="0.171" /><testcase classname="tests.test_box_tof_flow" name="test_defaults_keep_sensor_flow_exact_pose_and_actual_timing" time="0.006" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[enabled-1]" time="0.003" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[missing_frames-1]" time="0.003" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[step_us-51]" time="0.003" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[handoff_p10_us-728]" time="0.004" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[tof_min_mm-300]" time="0.004" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[tof_confirm_samples-1]" time="0.004" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[tof_max_age_ms-1000]" time="0.003" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[slow_pulse_ms-101]" time="0.004" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[edge_margin_norm-nan]" time="0.003" /><testcase classname="tests.test_box_tof_flow" name="test_bad_settings_rejected[max_recovery_actions-0]" time="0.003" /><testcase classname="tests.test_box_tof_flow" name="test_floor_distance_and_sensor_flow_cannot_both_be_enabled[distance]" time="0.004" /><testcase classname="tests.test_box_tof_flow" name="test_edge_is_not_a_size_or_occlusion_classifier[box0-None]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_edge_is_not_a_size_or_occlusion_classifier[box1-top]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_edge_is_not_a_size_or_occlusion_classifier[box2-bottom]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_edge_is_not_a_size_or_occlusion_classifier[box3-top+bottom]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_rolling_box_growth_is_relative_to_latest_not_original_and_ambiguous_waits" time="0.003" /><testcase classname="tests.test_box_tof_flow" name="test_one_correct_frame_updates_box_and_keeps_locked_label_bin" time="0.175" /><testcase classname="tests.test_box_tof_flow" name="test_misses_then_one_correct_frame_succeeds_without_extra_confirmation" time="0.358" /><testcase classname="tests.test_box_tof_flow" name="test_three_wrong_or_missing_frames_keep_reference_and_return_no_live_box" time="0.359" /><testcase classname="tests.test_box_tof_flow" name="test_network_failures_do_not_count_as_three_negative_frames" time="0.378" /><testcase classname="tests.test_box_tof_flow" name="test_three_misses_repeat_exact_last_action_and_stop_between_checks[FORWARD]" time="0.589" /><testcase classname="tests.test_box_tof_flow" name="test_three_misses_repeat_exact_last_action_and_stop_between_checks[LOWER]" time="0.584" /><testcase classname="tests.test_box_tof_flow" name="test_three_misses_repeat_exact_last_action_and_stop_between_checks[LEFT]" time="0.584" /><testcase classname="tests.test_box_tof_flow" name="test_persistent_loss_has_finite_repeat_budget" time="0.786" /><testcase classname="tests.test_box_tof_flow" name="test_box_decisions_use_current_frame_and_edge_overrides_lowering[above-box0-FORWARD]" time="0.175" /><testcase classname="tests.test_box_tof_flow" name="test_box_decisions_use_current_frame_and_edge_overrides_lowering[inside-box1-LOWER]" time="0.180" /><testcase classname="tests.test_box_tof_flow" name="test_box_decisions_use_current_frame_and_edge_overrides_lowering[below-box2-LOWER]" time="0.153" /><testcase classname="tests.test_box_tof_flow" name="test_box_decisions_use_current_frame_and_edge_overrides_lowering[top_clip-box3-FORWARD]" time="0.158" /><testcase classname="tests.test_box_tof_flow" name="test_box_decisions_use_current_frame_and_edge_overrides_lowering[bottom_clip-box4-FORWARD]" time="0.173" /><testcase classname="tests.test_box_tof_flow" name="test_bad_tof_sample_never_authorizes_motion[valid-False]" time="0.001" /><testcase classname="tests.test_box_tof_flow" name="test_bad_tof_sample_never_authorizes_motion[mm-0]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_bad_tof_sample_never_authorizes_motion[mm-nan]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_bad_tof_sample_never_authorizes_motion[seq-0]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_bad_tof_sample_never_authorizes_motion[status-4]" time="0.001" /><testcase classname="tests.test_box_tof_flow" name="test_bad_tof_sample_never_authorizes_motion[age_ms-240]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_bad_tof_sample_never_authorizes_motion[age_ms-None]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_bad_tof_sample_never_authorizes_motion[present-False]" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_valid_tof_sample_converts_no_camera_or_focal_units" time="0.000" /><testcase classname="tests.test_box_tof_flow" name="test_old_firmware_or_absent_sensor_refused_before_auto_movement" time="0.151" /><testcase classname="tests.test_box_tof_flow" name="test_final_pose_cannot_be_called_without_confirmed_tof_distance" time="0.171" /><testcase classname="tests.test_box_tof_flow" name="test_complete_cycle_no_vision_from2050_to_grip_release" time="16.098" /><testcase classname="tests.test_box_tof_flow" name="test_tof_fault_or_below_window_never_lowers_final_or_grips[below]" time="0.181" /><testcase classname="tests.test_box_tof_flow" name="test_tof_fault_or_below_window_never_lowers_final_or_grips[invalid]" time="5.264" /><testcase classname="tests.test_box_tof_flow" name="test_firmware_sim_tof_guard_brakes_and_blocks_further_pulse" time="0.153" /><testcase classname="tests.test_box_tof_flow" name="test_camera_guides_show_new_flow_and_leave_raw_frame_clean" time="0.056"><failure message="assert False&#10; +  where False = any(&lt;generator object test_camera_guides_show_new_flow_and_leave_raw_frame_clean.&lt;locals&gt;.&lt;genexpr&gt; at 0x7f6f85c12190&gt;)">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f6fee6264b0&gt;
+
+    def test_camera_guides_show_new_flow_and_leave_raw_frame_clean(monkeypatch):
+        import cv2
+        import numpy as np
+        from types import SimpleNamespace
+        from camera_guides import CameraGuides
+        c=config();labels=[];original=cv2.putText
+        def put(img,text,*args,**kwargs):labels.append(text);return original(img,text,*args,**kwargs)
+        monkeypatch.setattr(cv2,'putText',put)
+        controller=SimpleNamespace(running=True,cfg=c,state={'auto_running':True,'phase':'box_follow','s2_us':1300})
+        raw_image=np.zeros((360,640,3),np.uint8)
+        shown=CameraGuides(PARAMS,controller).render(raw_image)
+        assert not raw_image.any() and shown.any()
+        assert any('MATCH 1 FRAME / MISS 3 FRAMES' in s for s in labels)
+        controller.state.update(phase='tof_approach',s2_us=2050,tof_mm=225)
+        labels.clear();CameraGuides(PARAMS,controller).render(raw_image)
+        assert any('VISION OFF / VL53L1X ONLY' in s for s in labels)
+        assert not any('VL53 28.0cm' in s for s in labels)
+        controller.state.update(tof_valid=True)
+        labels.clear();CameraGuides(PARAMS,controller).render(raw_image)
+&gt;       assert any('VL53 28.0cm' in s for s in labels)
+E       assert False
+E        +  where False = any(&lt;generator object test_camera_guides_show_new_flow_and_leave_raw_frame_clean.&lt;locals&gt;.&lt;genexpr&gt; at 0x7f6f85c12190&gt;)
+
+tests/test_box_tof_flow.py:335: AssertionError</failure></testcase><testcase classname="tests.test_box_tof_flow" name="test_stop_and_d18_interrupt_sensor_phase_without_late_motion[stop]" time="0.324" /><testcase classname="tests.test_box_tof_flow" name="test_stop_and_d18_interrupt_sensor_phase_without_late_motion[rear]" time="0.741" /><testcase classname="tests.test_box_tof_recovery" name="test_clipped_or_small_correct_lock_has_recovery_action[box0-LEFT]" time="0.154" /><testcase classname="tests.test_box_tof_recovery" name="test_clipped_or_small_correct_lock_has_recovery_action[box1-RIGHT]" time="0.152" /><testcase classname="tests.test_box_tof_recovery" name="test_clipped_or_small_correct_lock_has_recovery_action[box2-both_sides]" time="0.155" /><testcase classname="tests.test_box_tof_recovery" name="test_clipped_or_small_correct_lock_has_recovery_action[box3-FORWARD]" time="0.163" /><testcase classname="tests.test_box_tof_recovery" name="test_clipped_or_small_correct_lock_has_recovery_action[box4-RIGHT]" time="0.156" /><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[1300-both_sides-250]" time="0.178" /><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[1550-both_sides-300]" time="5.590"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'confirmed'&#10;  Actual message: 'Hết thời gian tiếp cận VL53; không gắp'">robot = (&lt;brain.Brain object at 0x7f6fca9de9f0&gt;, &lt;transport.SimTransport object at 0x7f6fca9df170&gt;)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-7/test_range_confirmation_can_st1')
+p1 = 1550, reason = 'both_sides', mm = 300
+
+    @pytest.mark.parametrize('p1,reason,mm',[
+        (1300,'both_sides',250),(1550,'both_sides',300),
+        (1800,'forward_range',225),(2000,'forward_range',225),
+        (2050,'handoff',225),
+    ])
+    def test_range_confirmation_can_start_at_current_stored_pose(robot,tmp_path,p1,reason,mm):
+        async def run():
+            b,hw,a,_=prepared(robot,tmp_path)
+            hw.state['joints'].update(targets_at(a.cfg['arm_path'],p1))
+            f=BoxToFFlow(a);f.last_obj=copy.deepcopy(a.target);f.last_action='FORWARD'
+            if reason=='both_sides':f.last_obj['bbox_norm']=[0,.3,1,.7]
+            stream_range(b,hw,mm)
+            async def final():
+                assert f.tof_confirmed and f.tof_pose==p1 and a.vision_paused
+                assert not any(hw.state['motors']) and not hw.state['tof']['guard']
+                raise NearHold('confirmed')
+            f.final_approach=final
+            n=len(hw.commands)
+            with pytest.raises(NearHold,match='confirmed'):await f.sensor_approach(reason)
+            votes=[e.args[0] for e in a.report.call_args_list if e.args[0]['state']=='auto_tof_observe']
+            assert votes and votes[-1]['tof_votes']==1
+            assert not any(s.startswith(('P ','S ','G ')) for s in hw.commands[n:])
+            assert hw.state['joints']['p1']==p1
+            assert a.vision.calls==0 and a.selected_bin==4
+&gt;       asyncio.run(run())
+
+tests/test_box_tof_recovery.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        b,hw,a,_=prepared(robot,tmp_path)
+        hw.state['joints'].update(targets_at(a.cfg['arm_path'],p1))
+        f=BoxToFFlow(a);f.last_obj=copy.deepcopy(a.target);f.last_action='FORWARD'
+        if reason=='both_sides':f.last_obj['bbox_norm']=[0,.3,1,.7]
+        stream_range(b,hw,mm)
+        async def final():
+            assert f.tof_confirmed and f.tof_pose==p1 and a.vision_paused
+            assert not any(hw.state['motors']) and not hw.state['tof']['guard']
+            raise NearHold('confirmed')
+        f.final_approach=final
+        n=len(hw.commands)
+&gt;       with pytest.raises(NearHold,match='confirmed'):await f.sensor_approach(reason)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'confirmed'
+E         Actual message: 'Hết thời gian tiếp cận VL53; không gắp'
+
+tests/test_box_tof_recovery.py:72: AssertionError</failure></testcase><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[1800-forward_range-225]" time="0.165" /><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[2000-forward_range-225]" time="0.169" /><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[2050-handoff-225]" time="0.190" /><testcase classname="tests.test_box_tof_recovery" name="test_early_range_does_not_bypass_invalid_or_unconfirmed_samples[below]" time="0.162" /><testcase classname="tests.test_box_tof_recovery" name="test_early_range_does_not_bypass_invalid_or_unconfirmed_samples[invalid]" time="5.261" /><testcase classname="tests.test_box_tof_recovery" name="test_pending_detector_is_cancelled_before_range_handoff" time="0.220" /><testcase classname="tests.test_box_tof_recovery" name="test_camera_forward_brakes_when_range_arrives_during_command_or_pulse[before_G]" time="0.289" /><testcase classname="tests.test_box_tof_recovery" name="test_camera_forward_brakes_when_range_arrives_during_command_or_pulse[during_G]" time="0.525" /><testcase classname="tests.test_box_tof_recovery" name="test_invalid_range_allows_camera_pulse_without_gripping[before_G]" time="0.826" /><testcase classname="tests.test_box_tof_recovery" name="test_invalid_range_allows_camera_pulse_without_gripping[during_G]" time="0.855" /><testcase classname="tests.test_box_tof_recovery" name="test_passive_range_does_not_shortcut_non_forward_actions[LOWER]" time="0.385" /><testcase classname="tests.test_box_tof_recovery" name="test_passive_range_does_not_shortcut_non_forward_actions[LEFT]" time="0.366" /><testcase classname="tests.test_box_tof_recovery" name="test_passive_range_does_not_shortcut_non_forward_actions[RIGHT]" time="0.357" /><testcase classname="tests.test_box_tof_recovery" name="test_unauthorized_early_entry_cannot_move_hand_or_wheels[handoff]" time="0.196" /><testcase classname="tests.test_box_tof_recovery" name="test_unauthorized_early_entry_cannot_move_hand_or_wheels[both_sides]" time="0.153" /><testcase classname="tests.test_box_tof_recovery" name="test_unauthorized_early_entry_cannot_move_hand_or_wheels[forward_range]" time="0.151" /><testcase classname="tests.test_box_tof_recovery" name="test_unauthorized_early_entry_cannot_move_hand_or_wheels[distance_ready]" time="0.149" /><testcase classname="tests.test_box_tof_recovery" name="test_unauthorized_early_entry_cannot_move_hand_or_wheels[unknown]" time="0.151" /><testcase classname="tests.test_box_tof_recovery" name="test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision[both]" time="14.440"><failure message="assert (3 == 2)&#10; +  where 3 = &lt;test_box_tof_recovery.RecoveryTransport object at 0x7f6fca95c620&gt;.early_pulses">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-7/test_early_full_cycle_reaches_0')
+kind = 'both'
+
+    @pytest.mark.parametrize('kind',['both','missing'])
+    def test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision(tmp_path,kind):
+        async def run():
+            r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+            c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+            p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+            hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+            wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+            v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+            try:
+                await a.start();await finish(a,timeout=50)
+                assert a.state['state']=='auto_done' and hw.released,a.state
+                events=[call.args[0] for call in a.report.call_args_list]
+                entry=[e for e in events if e['state']=='auto_tof_handoff']
+                assert len(entry)==1 and entry[0]['s2_us']==1300
+                assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+                assert hw.early_pulses==2 and hw.ir_pulses==2
+                assert 'P 1 2310' in hw.commands and 'P 10 650' in hw.commands
+                assert all(e['bin']==4 for e in events if e['state']=='auto_grip')
+                if kind=='missing':
+                    assert v.missing==3
+                    assert 'G 100 0 0 20 160 240' in hw.commands
+                    assert 'G 100 0 0 20 80 0' in hw.commands
+                else:assert not any(s=='G 100 0 0 20 160 240' for s in hw.commands)
+                assert all(s.split()[1:4]==['100','0','0'] for s in hw.commands if s.startswith('G '))
+            finally:
+                if a.running:await a.stop()
+                b.close()
+&gt;       asyncio.run(run())
+
+tests/test_box_tof_recovery.py:264: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+        c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+        p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+        hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+        wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+        v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+        try:
+            await a.start();await finish(a,timeout=50)
+            assert a.state['state']=='auto_done' and hw.released,a.state
+            events=[call.args[0] for call in a.report.call_args_list]
+            entry=[e for e in events if e['state']=='auto_tof_handoff']
+            assert len(entry)==1 and entry[0]['s2_us']==1300
+            assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+&gt;           assert hw.early_pulses==2 and hw.ir_pulses==2
+E           assert (3 == 2)
+E            +  where 3 = &lt;test_box_tof_recovery.RecoveryTransport object at 0x7f6fca95c620&gt;.early_pulses
+
+tests/test_box_tof_recovery.py:252: AssertionError</failure></testcase><testcase classname="tests.test_box_tof_recovery" name="test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision[missing]" time="15.606"><failure message="assert (3 == 2)&#10; +  where 3 = &lt;test_box_tof_recovery.RecoveryTransport object at 0x7f6fca94f410&gt;.early_pulses">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-7/test_early_full_cycle_reaches_1')
+kind = 'missing'
+
+    @pytest.mark.parametrize('kind',['both','missing'])
+    def test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision(tmp_path,kind):
+        async def run():
+            r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+            c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+            p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+            hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+            wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+            v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+            try:
+                await a.start();await finish(a,timeout=50)
+                assert a.state['state']=='auto_done' and hw.released,a.state
+                events=[call.args[0] for call in a.report.call_args_list]
+                entry=[e for e in events if e['state']=='auto_tof_handoff']
+                assert len(entry)==1 and entry[0]['s2_us']==1300
+                assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+                assert hw.early_pulses==2 and hw.ir_pulses==2
+                assert 'P 1 2310' in hw.commands and 'P 10 650' in hw.commands
+                assert all(e['bin']==4 for e in events if e['state']=='auto_grip')
+                if kind=='missing':
+                    assert v.missing==3
+                    assert 'G 100 0 0 20 160 240' in hw.commands
+                    assert 'G 100 0 0 20 80 0' in hw.commands
+                else:assert not any(s=='G 100 0 0 20 160 240' for s in hw.commands)
+                assert all(s.split()[1:4]==['100','0','0'] for s in hw.commands if s.startswith('G '))
+            finally:
+                if a.running:await a.stop()
+                b.close()
+&gt;       asyncio.run(run())
+
+tests/test_box_tof_recovery.py:264: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+        c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+        p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+        hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+        wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+        v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+        try:
+            await a.start();await finish(a,timeout=50)
+            assert a.state['state']=='auto_done' and hw.released,a.state
+            events=[call.args[0] for call in a.report.call_args_list]
+            entry=[e for e in events if e['state']=='auto_tof_handoff']
+            assert len(entry)==1 and entry[0]['s2_us']==1300
+            assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+&gt;           assert hw.early_pulses==2 and hw.ir_pulses==2
+E           assert (3 == 2)
+E            +  where 3 = &lt;test_box_tof_recovery.RecoveryTransport object at 0x7f6fca94f410&gt;.early_pulses
+
+tests/test_box_tof_recovery.py:252: AssertionError</failure></testcase><testcase classname="tests.test_box_tof_recovery" name="test_early_sensor_phase_obeys_stop_and_rear_interrupt[stop]" time="0.325" /><testcase classname="tests.test_box_tof_recovery" name="test_early_sensor_phase_obeys_stop_and_rear_interrupt[rear]" time="0.717" /><testcase classname="tests.test_gift_d4_v3169" name="test_gift_d4_and_lid_p4_are_independent" time="0.472" /><testcase classname="tests.test_gift_d4_v3169" name="test_old_d22_firmware_protocol_cannot_enable_d4" time="0.004"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'V3.16.10'&#10;  Actual message: 'Cần nạp firmware V3.16.11 hỗ trợ D4 tới 2500 us'">robot = (&lt;brain.Brain object at 0x7f6fca988bf0&gt;, &lt;transport.SimTransport object at 0x7f6fca98b5c0&gt;)
+
+    def test_old_d22_firmware_protocol_cannot_enable_d4(robot):
+        b,hw=robot;hw.state['gift_protocol']=2
+        b.last_hw=hw.request('STATUS');n=len(hw.commands)
+        assert not b.snapshot()['gift']['available']
+&gt;       with pytest.raises(ValueError,match='V3.16.10'):b.command('GIFT DISPENSE',b.epoch)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'V3.16.10'
+E         Actual message: 'Cần nạp firmware V3.16.11 hỗ trợ D4 tới 2500 us'
+
+tests/test_gift_d4_v3169.py:27: AssertionError</failure></testcase><testcase classname="tests.test_v39" name="test_actual_sketch_profile_and_safety_compile_on_host" time="1.078" /></testsuite></testsuites>

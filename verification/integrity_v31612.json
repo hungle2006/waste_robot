@@ -1,0 +1,27 @@
+{
+  "baseline": "waste_robot_v3_16_11_d4_roi10_20_25cm_full_env.zip",
+  "baseline_sha256": "888fdf7ae5a05e39ab04ed31c35d4e4b83273b38c62f755d6ee497d7aaac3185",
+  "baseline_files_missing": [],
+  "protected_files_byte_identical": 82,
+  "changed_files": [
+    "README_CHAY_TRUOC.md",
+    "python/auto_controller.py",
+    "python/box_tof_flow.py",
+    "python/check_system.py",
+    "python/main.py",
+    "python/server.py",
+    "tests/test_vl53_auto_ready_v3162.py",
+    "web/operator.html"
+  ],
+  "distance_mm": [
+    200,
+    250
+  ],
+  "roi": [
+    10,
+    10
+  ],
+  "gift_digital_pin": 4,
+  "grip_close_us": 2000,
+  "physical_robot_tested": false
+}

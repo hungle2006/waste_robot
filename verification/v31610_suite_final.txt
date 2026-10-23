@@ -1,0 +1,157 @@
+........................................................................ [ 14%]
+......................................................................F. [ 29%]
+.....................................F.................................. [ 44%]
+........................................................................ [ 59%]
+........................................................................ [ 74%]
+........................................................................ [ 89%]
+..................................................                       [100%]
+=================================== FAILURES ===================================
+____________________ test_modal_receives_only_original_jpeg ____________________
+
+settings = (PosixPath('/tmp/pytest-of-root/pytest-3/test_modal_receives_only_origi0/auto.json'), {'version': 3, 'calibration': {'...{'p1': 1300, 'p10': 950, 'p11': 1250, 'd2': 2100, ...}, 'approach_s1_s2_deg': 90, 's2_pivot_height_cm': 42, ...}, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4587106930>
+
+    def test_modal_receives_only_original_jpeg(settings, monkeypatch):
+        import asyncio
+        import httpx
+        path, _ = settings
+        vision = LiveKitModal('https://app', 'https://modal')
+        raw = np.full((480, 640, 3), 80, np.uint8)
+        shown = display_frame(raw, vision.accept_local_frame, CameraGuides(path))
+        original = vision.jpeg
+        sent = []
+    
+        async def post(self, url, **kwargs):
+            sent.append(kwargs['files']['image'][1])
+            return httpx.Response(200, json={'found': False, 'objects': []}, request=httpx.Request('POST', url))
+    
+        monkeypatch.setattr(httpx.AsyncClient, 'post', post)
+>       asyncio.run(vision.detect())
+
+tests/test_camera_guides.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+python/livekit_modal.py:123: in detect
+    async with httpx.AsyncClient(timeout=180) as client:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../pulse2500_qa/lib/python3.12/site-packages/httpx/_client.py:1415: in __init__
+    else self._init_proxy_transport(
+../../pulse2500_qa/lib/python3.12/site-packages/httpx/_client.py:1464: in _init_proxy_transport
+    return AsyncHTTPTransport(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <httpx.AsyncHTTPTransport object at 0x7f45872547d0>, verify = True
+cert = None, trust_env = True, http1 = True, http2 = False
+limits = Limits(max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.0)
+proxy = Proxy('socks5h://127.0.0.1:34333'), uds = None, local_address = None
+retries = 0, socket_options = None
+
+    def __init__(
+        self,
+        verify: ssl.SSLContext | str | bool = True,
+        cert: CertTypes | None = None,
+        trust_env: bool = True,
+        http1: bool = True,
+        http2: bool = False,
+        limits: Limits = DEFAULT_LIMITS,
+        proxy: ProxyTypes | None = None,
+        uds: str | None = None,
+        local_address: str | None = None,
+        retries: int = 0,
+        socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
+    ) -> None:
+        import httpcore
+    
+        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
+        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
+    
+        if proxy is None:
+            self._pool = httpcore.AsyncConnectionPool(
+                ssl_context=ssl_context,
+                max_connections=limits.max_connections,
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
+                http1=http1,
+                http2=http2,
+                uds=uds,
+                local_address=local_address,
+                retries=retries,
+                socket_options=socket_options,
+            )
+        elif proxy.url.scheme in ("http", "https"):
+            self._pool = httpcore.AsyncHTTPProxy(
+                proxy_url=httpcore.URL(
+                    scheme=proxy.url.raw_scheme,
+                    host=proxy.url.raw_host,
+                    port=proxy.url.port,
+                    target=proxy.url.raw_path,
+                ),
+                proxy_auth=proxy.raw_auth,
+                proxy_headers=proxy.headers.raw,
+                proxy_ssl_context=proxy.ssl_context,
+                ssl_context=ssl_context,
+                max_connections=limits.max_connections,
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
+                http1=http1,
+                http2=http2,
+                socket_options=socket_options,
+            )
+        elif proxy.url.scheme in ("socks5", "socks5h"):
+            try:
+                import socksio  # noqa
+            except ImportError:  # pragma: no cover
+>               raise ImportError(
+                    "Using SOCKS proxy, but the 'socksio' package is not installed. "
+                    "Make sure to install httpx using `pip install httpx[socks]`."
+                ) from None
+E               ImportError: Using SOCKS proxy, but the 'socksio' package is not installed. Make sure to install httpx using `pip install httpx[socks]`.
+
+../../pulse2500_qa/lib/python3.12/site-packages/httpx/_transports/default.py:335: ImportError
+___________________ test_gift_d4_and_lid_p4_are_independent ____________________
+
+robot = (<brain.Brain object at 0x7f45861463c0>, <transport.SimTransport object at 0x7f4586146a50>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-3/test_gift_d4_and_lid_p4_are_in0')
+
+    def test_gift_d4_and_lid_p4_are_independent(robot,tmp_path):
+        b,hw=robot
+        assert b.snapshot()['gift']['pin']==4
+        assert 'd22' not in hw.state['joints']
+>       b.command('LID OPEN',b.epoch);wait_for(lambda:not b.busy)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_gift_d4_v3169.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/brain.py:287: in command
+    self.check(epoch, allow_drive=is_drive)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <brain.Brain object at 0x7f45861463c0>, epoch = 2, allow_drive = False
+
+    def check(self, epoch, allow_drive=False):
+        if not self.connected: raise ConnectionError("Arduino chưa kết nối")
+        if epoch != self.epoch: raise ValueError("Lệnh cũ bị hủy. Đọc lại trạng thái.")
+        if self.stopped: raise ValueError("Đang dừng. Nhấn Cho phép điều khiển.")
+        if self.busy or (self.drive_until and not allow_drive):
+>           raise ValueError("Đang chạy thao tác. Chờ hoặc nhấn Dừng.")
+E           ValueError: Đang chạy thao tác. Chờ hoặc nhấn Dừng.
+
+python/brain.py:117: ValueError
+=============================== warnings summary ===============================
+tests/test_approach.py::test_approach_ui_save_does_not_move_hardware
+  /workspace/scratch/afcbd1fb0e25/pulse2500_qa/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_camera_guides.py::test_modal_receives_only_original_jpeg - ...
+FAILED tests/test_gift_d4_v3169.py::test_gift_d4_and_lid_p4_are_independent
+2 failed, 480 passed, 1 warning in 635.22s (0:10:35)

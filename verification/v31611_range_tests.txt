@@ -1,0 +1,602 @@
+F....................................................................... [ 52%]
+...............................F........F..................FF...F.       [100%]
+=================================== FAILURES ===================================
+________________________ test_all_config_sources_agree _________________________
+
+path = PosixPath('/workspace/scratch/afcbd1fb0e25/range20_25_work/waste_robot_complete/python/auto_config.json')
+robot_config = {'limits': {'p1': [500, 3500], 'p10': [500, 2500], 'p11': [500, 2500], 'p9': [500, 2500], ...}, 'step_us': 20, 'step_ms': 40, 'settle_ms': 300, ...}
+
+    def load_auto_config(path, robot_config):
+        c = read_config(path)
+        if c.get('version') not in (1,2,3): raise AutoFault('Sai phiên bản auto_config.json')
+        cal, control = c['calibration'], c['control']
+        frame = cal['frame_size']
+        if len(frame) != 2 or any(type(v) is not int or v < 16 for v in frame):
+            raise AutoFault('Sai kích thước ảnh hiệu chuẩn')
+        for name, lo, hi in [('speed',1,255),('move_ms',50,400),('s2_step_us',1,50),
+                             ('settle_ms',100,3000),('stable_samples',2,10),
+                             ('max_align_moves_per_stage',1,100),('max_cycles',1,100),
+                             ('max_no_target_attempts',1,100),('no_target_retry_ms',100,10000)]:
+            value = control[name]
+            if type(value) is not int or not lo <= value <= hi: raise AutoFault('Sai tham số '+name)
+        for name, lo, hi in [('max_target_jump_normalized',.01,.5),('inference_timeout_s',1,180),
+                             ('max_result_age_s',.1,60),('max_cycle_s',10,3600)]:
+            value = control[name]
+            if type(value) not in (int,float) or not math.isfinite(value) or not lo <= value <= hi:
+                raise AutoFault('Sai tham số '+name)
+        if type(control['repeat']) is not bool: raise AutoFault('repeat phải là boolean')
+        mode = cal.get('mode','calibrated')
+        if mode not in ('relative','calibrated'): raise AutoFault('Sai chế độ căn ảnh')
+        cal['mode'] = mode
+        if mode == 'relative':
+            search = robot_config['poses']['SEARCH']
+            final = cal['grasp_final_s2_us']
+            if type(final) is not int or not search['p1'] < final <= robot_config['limits']['p1'][1]:
+                raise AutoFault('Giới hạn hạ S2 phải lớn hơn SEARCH và trong giới hạn P1')
+            goal = {'target_norm':cal['relative_target_norm'],'tolerance_norm':cal['relative_tolerance_norm']}
+            relative_stage(goal,frame)  # Validate the approximate reference, not a measured contact point.
+            response = control.get('relative_min_response_norm',.01)
+            retries = control.get('relative_max_no_response',3)
+            if type(response) not in (int,float) or not math.isfinite(response) or not .002 <= response <= .05:
+                raise AutoFault('Sai ngưỡng phản hồi ảnh tương đối')
+            if type(retries) is not int or not 1 <= retries <= 5: raise AutoFault('Sai giới hạn thử phản hồi ảnh')
+            control.update(relative_min_response_norm=response,relative_max_no_response=retries)
+            cal['frozen_joints_us'] = {j:search[j] for j in ('p10','p11','d2')}
+            cal['positive_error_x_move'] = cal.get('positive_error_x_move') or 'RIGHT'
+            cal['positive_error_y_move'] = cal.get('positive_error_y_move') or 'BACK'
+            # Runtime references only. Do not write these as physically calibrated stages.
+            cal['stages'] = [relative_stage(dict(goal,s2_us=pulse),frame) for pulse in (search['p1'],final)]
+        missing = []
+        frozen = cal['frozen_joints_us']
+        if set(frozen) != {'p10','p11','d2'}: missing.append('xung cố định S1/P10, trụ/P11, nối/D2')
+        for j,v in frozen.items():
+            if j not in ('p10','p11','d2') or type(v) is not int or not robot_config['limits'][j][0] <= v <= robot_config['limits'][j][1]:
+                raise AutoFault('Xung cố định không hợp lệ: '+j)
+        search = robot_config['poses']['SEARCH']
+        for j,v in frozen.items():
+            if search.get(j) != v: raise AutoFault('SEARCH đã đổi '+j+'; hiệu chuẩn lại AUTO theo tư thế mới')
+        if cal['positive_error_x_move'] not in ('LEFT','RIGHT'): missing.append('chiều căn ngang theo ảnh')
+        if cal['positive_error_y_move'] not in ('FORWARD','BACK'): missing.append('chiều căn dọc theo ảnh')
+        stages = [relative_stage(stage,frame) for stage in cal['stages']]
+        cal['stages'] = stages
+        if not stages: missing.append('các mốc S2 và điểm pixel mục tiêu')
+        previous = None
+        direction = None
+        for i,stage in enumerate(stages):
+            pulse = stage['s2_us']
+            if type(pulse) is not int or not robot_config['limits']['p1'][0] <= pulse <= robot_config['limits']['p1'][1]:
+                raise AutoFault('Xung S2 ngoài giới hạn')
+            if i == 0 and pulse != search['p1']: raise AutoFault('Mốc đầu phải trùng S2 trong SEARCH')
+            if previous is not None:
+                delta = pulse-previous
+                if not delta or (direction is not None and delta*direction <= 0):
+                    raise AutoFault('Các mốc S2 phải theo một chiều, không trùng')
+                direction = delta
+            previous = pulse
+            for field, high in [('target_px',frame),('tolerance_px',[frame[0]/4,frame[1]/4])]:
+                vals = stage[field]
+                if len(vals) != 2 or any(type(v) not in (int,float) or not math.isfinite(v) for v in vals):
+                    raise AutoFault('Sai điểm mục tiêu/vùng sai số')
+                for v,limit in zip(vals,high):
+                    if not (0 < v < limit): raise AutoFault('Điểm/vùng sai số nằm ngoài ảnh')
+        final = cal['grasp_final_s2_us']
+        if type(final) is not int or not robot_config['limits']['p1'][0] <= final <= robot_config['limits']['p1'][1]:
+            raise AutoFault('Xung gắp cuối ngoài giới hạn')
+        if stages and stages[-1]['s2_us'] != final:
+            raise AutoFault('Mốc cuối phải là tư thế gắp thực tế đã đo, không chỉ tư thế 90 độ')
+        for name in ('contact_sensor','hold_sensor'):
+            if sensor_pin(cal[name]) is None: missing.append(name+' (IR hiện tại nối D19 Mega; P15 PCA không đọc cảm biến)')
+        if type(cal['active_level']) is not int or cal['active_level'] not in (0,1):
+            raise AutoFault('Sai mức kích hoạt IR')
+        hold_ms = cal['grasp_hold_confirm_ms']
+        if type(hold_ms) is not int or not 200 <= hold_ms <= 3000: raise AutoFault('Sai thời gian xác nhận giữ vật')
+        if missing: raise AutoFault('Cần hiệu chuẩn: '+ '; '.join(missing)+'. Chạy python calibrate_auto.py --help')
+        try: c['arm_path'] = validate_path(c.get('arm_path'),robot_config,final)
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        try: c['confirmed_grasp'] = checked_reference(c.get('confirmed_grasp'),c['arm_path'])
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        c['rear'] = rear_config(c.get('rear',{}))
+        c['near'] = near_config(c.get('near',{}))
+        c['approach'] = approach_config(c.get('approach',{}),c['near'])
+        c['tracking'] = tracking_config(c.get('tracking',{}))
+        try: c['target_lock'] = lock_config(c.get('target_lock',{}))
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        try:
+            c['motion']=checked_settings(c.get('motion',{}),MOTION_DEFAULTS)
+            c['visibility']=checked_settings(c.get('visibility',{}),VISIBILITY_DEFAULTS)
+        except ValueError as exc:raise AutoFault(str(exc)) from exc
+        if c['visibility']['enabled'] and (not c['approach']['enabled'] or cal['mode']!='relative' or not c['motion']['enabled']):
+            raise AutoFault('Giữ ảnh cần approach relative và motion.enabled=true')
+        if c['visibility']['min_step_us']>c['motion']['arm_step_us']:raise AutoFault('Bước tối thiểu lớn hơn bước tay')
+        if c['approach']['enabled'] and cal['mode']!='relative':
+            raise AutoFault('Tiến gần tách giai đoạn cần mode relative; tắt approach.enabled khi dùng mốc calibrated')
+        try:
+            from camera_publisher import CAMERA_INDEX
+>           c['distance'] = distance_config(c.get('distance', {}), robot_config, CAMERA_INDEX)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/auto_controller.py:314: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/floor_distance.py:88: in distance_config
+    c['stop_forward_cm'] = finite(c['stop_forward_cm'], 3, 200, 'stop_forward_cm: cần đo tầm gắp thực tế')
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = None, lo = 3, hi = 200, name = 'stop_forward_cm: cần đo tầm gắp thực tế'
+
+    def finite(value, lo, hi, name):
+        if type(value) not in (int, float) or not math.isfinite(value) or not lo <= value <= hi:
+>           raise ValueError('Sai ' + name)
+E           ValueError: Sai stop_forward_cm: cần đo tầm gắp thực tế
+
+python/floor_distance.py:16: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    def test_all_config_sources_agree():
+        robot_cfg = read_config(ROOT/'python/robot_params.py', 'robot')
+        for name in ('robot_params.py', 'auto_config.json'):
+>           cfg = load_auto_config(ROOT/'python'/name, robot_cfg)['box_tof_flow']
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_distance_window_v31611.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('/workspace/scratch/afcbd1fb0e25/range20_25_work/waste_robot_complete/python/auto_config.json')
+robot_config = {'limits': {'p1': [500, 3500], 'p10': [500, 2500], 'p11': [500, 2500], 'p9': [500, 2500], ...}, 'step_us': 20, 'step_ms': 40, 'settle_ms': 300, ...}
+
+    def load_auto_config(path, robot_config):
+        c = read_config(path)
+        if c.get('version') not in (1,2,3): raise AutoFault('Sai phiên bản auto_config.json')
+        cal, control = c['calibration'], c['control']
+        frame = cal['frame_size']
+        if len(frame) != 2 or any(type(v) is not int or v < 16 for v in frame):
+            raise AutoFault('Sai kích thước ảnh hiệu chuẩn')
+        for name, lo, hi in [('speed',1,255),('move_ms',50,400),('s2_step_us',1,50),
+                             ('settle_ms',100,3000),('stable_samples',2,10),
+                             ('max_align_moves_per_stage',1,100),('max_cycles',1,100),
+                             ('max_no_target_attempts',1,100),('no_target_retry_ms',100,10000)]:
+            value = control[name]
+            if type(value) is not int or not lo <= value <= hi: raise AutoFault('Sai tham số '+name)
+        for name, lo, hi in [('max_target_jump_normalized',.01,.5),('inference_timeout_s',1,180),
+                             ('max_result_age_s',.1,60),('max_cycle_s',10,3600)]:
+            value = control[name]
+            if type(value) not in (int,float) or not math.isfinite(value) or not lo <= value <= hi:
+                raise AutoFault('Sai tham số '+name)
+        if type(control['repeat']) is not bool: raise AutoFault('repeat phải là boolean')
+        mode = cal.get('mode','calibrated')
+        if mode not in ('relative','calibrated'): raise AutoFault('Sai chế độ căn ảnh')
+        cal['mode'] = mode
+        if mode == 'relative':
+            search = robot_config['poses']['SEARCH']
+            final = cal['grasp_final_s2_us']
+            if type(final) is not int or not search['p1'] < final <= robot_config['limits']['p1'][1]:
+                raise AutoFault('Giới hạn hạ S2 phải lớn hơn SEARCH và trong giới hạn P1')
+            goal = {'target_norm':cal['relative_target_norm'],'tolerance_norm':cal['relative_tolerance_norm']}
+            relative_stage(goal,frame)  # Validate the approximate reference, not a measured contact point.
+            response = control.get('relative_min_response_norm',.01)
+            retries = control.get('relative_max_no_response',3)
+            if type(response) not in (int,float) or not math.isfinite(response) or not .002 <= response <= .05:
+                raise AutoFault('Sai ngưỡng phản hồi ảnh tương đối')
+            if type(retries) is not int or not 1 <= retries <= 5: raise AutoFault('Sai giới hạn thử phản hồi ảnh')
+            control.update(relative_min_response_norm=response,relative_max_no_response=retries)
+            cal['frozen_joints_us'] = {j:search[j] for j in ('p10','p11','d2')}
+            cal['positive_error_x_move'] = cal.get('positive_error_x_move') or 'RIGHT'
+            cal['positive_error_y_move'] = cal.get('positive_error_y_move') or 'BACK'
+            # Runtime references only. Do not write these as physically calibrated stages.
+            cal['stages'] = [relative_stage(dict(goal,s2_us=pulse),frame) for pulse in (search['p1'],final)]
+        missing = []
+        frozen = cal['frozen_joints_us']
+        if set(frozen) != {'p10','p11','d2'}: missing.append('xung cố định S1/P10, trụ/P11, nối/D2')
+        for j,v in frozen.items():
+            if j not in ('p10','p11','d2') or type(v) is not int or not robot_config['limits'][j][0] <= v <= robot_config['limits'][j][1]:
+                raise AutoFault('Xung cố định không hợp lệ: '+j)
+        search = robot_config['poses']['SEARCH']
+        for j,v in frozen.items():
+            if search.get(j) != v: raise AutoFault('SEARCH đã đổi '+j+'; hiệu chuẩn lại AUTO theo tư thế mới')
+        if cal['positive_error_x_move'] not in ('LEFT','RIGHT'): missing.append('chiều căn ngang theo ảnh')
+        if cal['positive_error_y_move'] not in ('FORWARD','BACK'): missing.append('chiều căn dọc theo ảnh')
+        stages = [relative_stage(stage,frame) for stage in cal['stages']]
+        cal['stages'] = stages
+        if not stages: missing.append('các mốc S2 và điểm pixel mục tiêu')
+        previous = None
+        direction = None
+        for i,stage in enumerate(stages):
+            pulse = stage['s2_us']
+            if type(pulse) is not int or not robot_config['limits']['p1'][0] <= pulse <= robot_config['limits']['p1'][1]:
+                raise AutoFault('Xung S2 ngoài giới hạn')
+            if i == 0 and pulse != search['p1']: raise AutoFault('Mốc đầu phải trùng S2 trong SEARCH')
+            if previous is not None:
+                delta = pulse-previous
+                if not delta or (direction is not None and delta*direction <= 0):
+                    raise AutoFault('Các mốc S2 phải theo một chiều, không trùng')
+                direction = delta
+            previous = pulse
+            for field, high in [('target_px',frame),('tolerance_px',[frame[0]/4,frame[1]/4])]:
+                vals = stage[field]
+                if len(vals) != 2 or any(type(v) not in (int,float) or not math.isfinite(v) for v in vals):
+                    raise AutoFault('Sai điểm mục tiêu/vùng sai số')
+                for v,limit in zip(vals,high):
+                    if not (0 < v < limit): raise AutoFault('Điểm/vùng sai số nằm ngoài ảnh')
+        final = cal['grasp_final_s2_us']
+        if type(final) is not int or not robot_config['limits']['p1'][0] <= final <= robot_config['limits']['p1'][1]:
+            raise AutoFault('Xung gắp cuối ngoài giới hạn')
+        if stages and stages[-1]['s2_us'] != final:
+            raise AutoFault('Mốc cuối phải là tư thế gắp thực tế đã đo, không chỉ tư thế 90 độ')
+        for name in ('contact_sensor','hold_sensor'):
+            if sensor_pin(cal[name]) is None: missing.append(name+' (IR hiện tại nối D19 Mega; P15 PCA không đọc cảm biến)')
+        if type(cal['active_level']) is not int or cal['active_level'] not in (0,1):
+            raise AutoFault('Sai mức kích hoạt IR')
+        hold_ms = cal['grasp_hold_confirm_ms']
+        if type(hold_ms) is not int or not 200 <= hold_ms <= 3000: raise AutoFault('Sai thời gian xác nhận giữ vật')
+        if missing: raise AutoFault('Cần hiệu chuẩn: '+ '; '.join(missing)+'. Chạy python calibrate_auto.py --help')
+        try: c['arm_path'] = validate_path(c.get('arm_path'),robot_config,final)
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        try: c['confirmed_grasp'] = checked_reference(c.get('confirmed_grasp'),c['arm_path'])
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        c['rear'] = rear_config(c.get('rear',{}))
+        c['near'] = near_config(c.get('near',{}))
+        c['approach'] = approach_config(c.get('approach',{}),c['near'])
+        c['tracking'] = tracking_config(c.get('tracking',{}))
+        try: c['target_lock'] = lock_config(c.get('target_lock',{}))
+        except ValueError as exc: raise AutoFault(str(exc)) from exc
+        try:
+            c['motion']=checked_settings(c.get('motion',{}),MOTION_DEFAULTS)
+            c['visibility']=checked_settings(c.get('visibility',{}),VISIBILITY_DEFAULTS)
+        except ValueError as exc:raise AutoFault(str(exc)) from exc
+        if c['visibility']['enabled'] and (not c['approach']['enabled'] or cal['mode']!='relative' or not c['motion']['enabled']):
+            raise AutoFault('Giữ ảnh cần approach relative và motion.enabled=true')
+        if c['visibility']['min_step_us']>c['motion']['arm_step_us']:raise AutoFault('Bước tối thiểu lớn hơn bước tay')
+        if c['approach']['enabled'] and cal['mode']!='relative':
+            raise AutoFault('Tiến gần tách giai đoạn cần mode relative; tắt approach.enabled khi dùng mốc calibrated')
+        try:
+            from camera_publisher import CAMERA_INDEX
+            c['distance'] = distance_config(c.get('distance', {}), robot_config, CAMERA_INDEX)
+            if c['distance']['enabled'] and (not c['approach']['enabled'] or cal['mode'] != 'relative'):
+                raise ValueError('Khoảng cách cm cần approach.enabled và mode relative')
+>       except (ValueError, KeyError, TypeError) as exc: raise AutoFault(str(exc)) from exc
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       auto_controller.AutoFault: Sai stop_forward_cm: cần đo tầm gắp thực tế
+
+python/auto_controller.py:317: AutoFault
+__________ test_camera_guides_show_new_flow_and_leave_raw_frame_clean __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f6fee6264b0>
+
+    def test_camera_guides_show_new_flow_and_leave_raw_frame_clean(monkeypatch):
+        import cv2
+        import numpy as np
+        from types import SimpleNamespace
+        from camera_guides import CameraGuides
+        c=config();labels=[];original=cv2.putText
+        def put(img,text,*args,**kwargs):labels.append(text);return original(img,text,*args,**kwargs)
+        monkeypatch.setattr(cv2,'putText',put)
+        controller=SimpleNamespace(running=True,cfg=c,state={'auto_running':True,'phase':'box_follow','s2_us':1300})
+        raw_image=np.zeros((360,640,3),np.uint8)
+        shown=CameraGuides(PARAMS,controller).render(raw_image)
+        assert not raw_image.any() and shown.any()
+        assert any('MATCH 1 FRAME / MISS 3 FRAMES' in s for s in labels)
+        controller.state.update(phase='tof_approach',s2_us=2050,tof_mm=225)
+        labels.clear();CameraGuides(PARAMS,controller).render(raw_image)
+        assert any('VISION OFF / VL53L1X ONLY' in s for s in labels)
+        assert not any('VL53 28.0cm' in s for s in labels)
+        controller.state.update(tof_valid=True)
+        labels.clear();CameraGuides(PARAMS,controller).render(raw_image)
+>       assert any('VL53 28.0cm' in s for s in labels)
+E       assert False
+E        +  where False = any(<generator object test_camera_guides_show_new_flow_and_leave_raw_frame_clean.<locals>.<genexpr> at 0x7f6f85c12190>)
+
+tests/test_box_tof_flow.py:335: AssertionError
+_ test_range_confirmation_can_start_at_current_stored_pose[1550-both_sides-300] _
+
+robot = (<brain.Brain object at 0x7f6fca9de9f0>, <transport.SimTransport object at 0x7f6fca9df170>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-7/test_range_confirmation_can_st1')
+p1 = 1550, reason = 'both_sides', mm = 300
+
+    @pytest.mark.parametrize('p1,reason,mm',[
+        (1300,'both_sides',250),(1550,'both_sides',300),
+        (1800,'forward_range',225),(2000,'forward_range',225),
+        (2050,'handoff',225),
+    ])
+    def test_range_confirmation_can_start_at_current_stored_pose(robot,tmp_path,p1,reason,mm):
+        async def run():
+            b,hw,a,_=prepared(robot,tmp_path)
+            hw.state['joints'].update(targets_at(a.cfg['arm_path'],p1))
+            f=BoxToFFlow(a);f.last_obj=copy.deepcopy(a.target);f.last_action='FORWARD'
+            if reason=='both_sides':f.last_obj['bbox_norm']=[0,.3,1,.7]
+            stream_range(b,hw,mm)
+            async def final():
+                assert f.tof_confirmed and f.tof_pose==p1 and a.vision_paused
+                assert not any(hw.state['motors']) and not hw.state['tof']['guard']
+                raise NearHold('confirmed')
+            f.final_approach=final
+            n=len(hw.commands)
+            with pytest.raises(NearHold,match='confirmed'):await f.sensor_approach(reason)
+            votes=[e.args[0] for e in a.report.call_args_list if e.args[0]['state']=='auto_tof_observe']
+            assert votes and votes[-1]['tof_votes']==1
+            assert not any(s.startswith(('P ','S ','G ')) for s in hw.commands[n:])
+            assert hw.state['joints']['p1']==p1
+            assert a.vision.calls==0 and a.selected_bin==4
+>       asyncio.run(run())
+
+tests/test_box_tof_recovery.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        b,hw,a,_=prepared(robot,tmp_path)
+        hw.state['joints'].update(targets_at(a.cfg['arm_path'],p1))
+        f=BoxToFFlow(a);f.last_obj=copy.deepcopy(a.target);f.last_action='FORWARD'
+        if reason=='both_sides':f.last_obj['bbox_norm']=[0,.3,1,.7]
+        stream_range(b,hw,mm)
+        async def final():
+            assert f.tof_confirmed and f.tof_pose==p1 and a.vision_paused
+            assert not any(hw.state['motors']) and not hw.state['tof']['guard']
+            raise NearHold('confirmed')
+        f.final_approach=final
+        n=len(hw.commands)
+>       with pytest.raises(NearHold,match='confirmed'):await f.sensor_approach(reason)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'confirmed'
+E         Actual message: 'Hết thời gian tiếp cận VL53; không gắp'
+
+tests/test_box_tof_recovery.py:72: AssertionError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_handoff · Box chạm cả hai mép trái/phải: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 1/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 2/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 3/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 4/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 5/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 6/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 7/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 8/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 9/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 10/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 11/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 12/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=30.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 13/40 · Vật khóa: can · BIN 4
+_ test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision[both] __
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-7/test_early_full_cycle_reaches_0')
+kind = 'both'
+
+    @pytest.mark.parametrize('kind',['both','missing'])
+    def test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision(tmp_path,kind):
+        async def run():
+            r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+            c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+            p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+            hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+            wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+            v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+            try:
+                await a.start();await finish(a,timeout=50)
+                assert a.state['state']=='auto_done' and hw.released,a.state
+                events=[call.args[0] for call in a.report.call_args_list]
+                entry=[e for e in events if e['state']=='auto_tof_handoff']
+                assert len(entry)==1 and entry[0]['s2_us']==1300
+                assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+                assert hw.early_pulses==2 and hw.ir_pulses==2
+                assert 'P 1 2310' in hw.commands and 'P 10 650' in hw.commands
+                assert all(e['bin']==4 for e in events if e['state']=='auto_grip')
+                if kind=='missing':
+                    assert v.missing==3
+                    assert 'G 100 0 0 20 160 240' in hw.commands
+                    assert 'G 100 0 0 20 80 0' in hw.commands
+                else:assert not any(s=='G 100 0 0 20 160 240' for s in hw.commands)
+                assert all(s.split()[1:4]==['100','0','0'] for s in hw.commands if s.startswith('G '))
+            finally:
+                if a.running:await a.stop()
+                b.close()
+>       asyncio.run(run())
+
+tests/test_box_tof_recovery.py:264: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+        c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+        p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+        hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+        wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+        v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+        try:
+            await a.start();await finish(a,timeout=50)
+            assert a.state['state']=='auto_done' and hw.released,a.state
+            events=[call.args[0] for call in a.report.call_args_list]
+            entry=[e for e in events if e['state']=='auto_tof_handoff']
+            assert len(entry)==1 and entry[0]['s2_us']==1300
+            assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+>           assert hw.early_pulses==2 and hw.ir_pulses==2
+E           assert (3 == 2)
+E            +  where 3 = <test_box_tof_recovery.RecoveryTransport object at 0x7f6fca95c620>.early_pulses
+
+tests/test_box_tof_recovery.py:252: AssertionError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_search · Đưa tay về SEARCH; chỉ căn bánh khi tay đứng yên
+AUTO · auto_acquire · Đang xác nhận phân loại ban đầu · AUTO vẫn bật, bánh/tay đứng yên
+AUTO · auto_acquire · Đang xác nhận phân loại ban đầu · AUTO vẫn bật, bánh/tay đứng yên
+AUTO · auto_reacquire · Đã thấy vật; xác nhận thêm ảnh trước khi tiếp tục · AUTO vẫn bật, bánh/tay đứng yên · Vật khóa: can · BIN 4
+AUTO · auto_target_locked · Đã xác nhận vật đã khóa; tiếp tục AUTO · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 4 · Vật khóa: can · BIN 4
+AUTO · auto_sort · Phân loại BIN 4; đóng nắp rồi xoay đúng ngăn · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_handoff · Box chạm cả hai mép trái/phải: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=90.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 1/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=59.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 2/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=28.0cm · đang tiếp cận · Vật khóa: can · BIN 4
+AUTO · auto_tof_slow_forward · Tiến chậm 160ms thực thi, nhịp 3/40 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=22.5cm · đủ khoảng cách gắp · Vật khóa: can · BIN 4
+AUTO · auto_distance_ready · Đã đạt khoảng cách 20–25 cm; chuẩn bị S1 → S2 → xoay → kẹp → nâng · Vật khóa: can · BIN 4
+AUTO · auto_tof_final_pose · VL53 xác nhận20–25cm; đưa tay từng bước tới2310/650, chờ D19 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_forward · Chờ D19: tiến 160ms, nhịp 1/3 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_forward · Chờ D19: tiến 160ms, nhịp 2/3 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_ready · D19 ổn định tại2310/650; cho phép đóng kẹp · Vật khóa: can · BIN 4
+AUTO · auto_grip · Vật đã căn đúng và IR phát hiện; đóng kẹp · Vật khóa: can · BIN 4
+AUTO · auto_lift · Nâng S2 về SEARCH, giữ kẹp đóng · Vật khóa: can · BIN 4
+AUTO · auto_place · IR D19 vẫn thấy vật sau nâng · đưa vật tới BIN 4 đã xoay · Vật khóa: can · BIN 4
+AUTO · auto_open_lid · Đã gắp/nâng/đưa vật tới vị trí thả; mở nắp · Vật khóa: can · BIN 4
+AUTO · auto_release · Thả vật vào BIN 4 · Vật khóa: can · BIN 4
+AUTO · auto_cycle_done · Hoàn tất một lượt theo phản hồi hiện diện IR · Vật khóa: can · BIN 4
+AUTO · auto_done · AUTO hoàn tất; bánh đã dừng · Vật khóa: can · BIN 4
+_ test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision[missing] _
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-7/test_early_full_cycle_reaches_1')
+kind = 'missing'
+
+    @pytest.mark.parametrize('kind',['both','missing'])
+    def test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision(tmp_path,kind):
+        async def run():
+            r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+            c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+            p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+            hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+            wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+            v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+            try:
+                await a.start();await finish(a,timeout=50)
+                assert a.state['state']=='auto_done' and hw.released,a.state
+                events=[call.args[0] for call in a.report.call_args_list]
+                entry=[e for e in events if e['state']=='auto_tof_handoff']
+                assert len(entry)==1 and entry[0]['s2_us']==1300
+                assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+                assert hw.early_pulses==2 and hw.ir_pulses==2
+                assert 'P 1 2310' in hw.commands and 'P 10 650' in hw.commands
+                assert all(e['bin']==4 for e in events if e['state']=='auto_grip')
+                if kind=='missing':
+                    assert v.missing==3
+                    assert 'G 100 0 0 20 160 240' in hw.commands
+                    assert 'G 100 0 0 20 80 0' in hw.commands
+                else:assert not any(s=='G 100 0 0 20 160 240' for s in hw.commands)
+                assert all(s.split()[1:4]==['100','0','0'] for s in hw.commands if s.startswith('G '))
+            finally:
+                if a.running:await a.stop()
+                b.close()
+>       asyncio.run(run())
+
+tests/test_box_tof_recovery.py:264: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+        c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+        p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+        hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+        wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+        v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+        try:
+            await a.start();await finish(a,timeout=50)
+            assert a.state['state']=='auto_done' and hw.released,a.state
+            events=[call.args[0] for call in a.report.call_args_list]
+            entry=[e for e in events if e['state']=='auto_tof_handoff']
+            assert len(entry)==1 and entry[0]['s2_us']==1300
+            assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+>           assert hw.early_pulses==2 and hw.ir_pulses==2
+E           assert (3 == 2)
+E            +  where 3 = <test_box_tof_recovery.RecoveryTransport object at 0x7f6fca94f410>.early_pulses
+
+tests/test_box_tof_recovery.py:252: AssertionError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_search · Đưa tay về SEARCH; chỉ căn bánh khi tay đứng yên
+AUTO · auto_acquire · Đang xác nhận phân loại ban đầu · AUTO vẫn bật, bánh/tay đứng yên
+AUTO · auto_acquire · Đang xác nhận phân loại ban đầu · AUTO vẫn bật, bánh/tay đứng yên
+AUTO · auto_reacquire · Đã thấy vật; xác nhận thêm ảnh trước khi tiếp tục · AUTO vẫn bật, bánh/tay đứng yên · Vật khóa: can · BIN 4
+AUTO · auto_target_locked · Đã xác nhận vật đã khóa; tiếp tục AUTO · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 4 · Vật khóa: can · BIN 4
+AUTO · auto_sort · Phân loại BIN 4; đóng nắp rồi xoay đúng ngăn · Vật khóa: can · BIN 4
+AUTO · auto_target_observe · LOCK #1: cập nhật box từ 1 frame đúng vật · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_observe · Đáy=45.0%; vùng cho phép 50.5%–64.5% · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_drive · FORWARD 400 ms danh định; dừng rồi lấy ảnh mới · Vật khóa: can · BIN 4
+AUTO · auto_tof_missing · Không khớp box gần nhất của vật khóa; không cập nhật sang vật khác · kiểm tra 1/3 frame; tay/bánh dừng · Vật khóa: can · BIN 4
+AUTO · auto_tof_missing · Không khớp box gần nhất của vật khóa; không cập nhật sang vật khác · kiểm tra 2/3 frame; tay/bánh dừng · Vật khóa: can · BIN 4
+AUTO · auto_tof_missing · Không khớp box gần nhất của vật khóa; không cập nhật sang vật khác · kiểm tra 3/3 frame; tay/bánh dừng · Vật khóa: can · BIN 4
+AUTO · auto_tof_repeat · Đã kiểm tra 3 frame mất/sai vật; lặp một bước FORWARD · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_drive · FORWARD 80 ms danh định; dừng rồi lấy ảnh mới · Vật khóa: can · BIN 4
+AUTO · auto_tof_missing · Không khớp box gần nhất của vật khóa; không cập nhật sang vật khác · kiểm tra 1/3 frame; tay/bánh dừng · Vật khóa: can · BIN 4
+AUTO · auto_tof_missing · Không khớp box gần nhất của vật khóa; không cập nhật sang vật khác · kiểm tra 2/3 frame; tay/bánh dừng · Vật khóa: can · BIN 4
+AUTO · auto_tof_missing · Không khớp box gần nhất của vật khóa; không cập nhật sang vật khác · kiểm tra 3/3 frame; tay/bánh dừng · Vật khóa: can · BIN 4
+AUTO · auto_tof_repeat · Đã kiểm tra 3 frame mất/sai vật; lặp một bước FORWARD · Vật khóa: can · BIN 4
+AUTO · auto_tof_box_drive · FORWARD 80 ms danh định; dừng rồi lấy ảnh mới · Vật khóa: can · BIN 4
+AUTO · auto_tof_handoff · VL53 đã tới ngưỡng khi đang tiến, kể cả mất box: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=22.5cm · đủ khoảng cách gắp · Vật khóa: can · BIN 4
+AUTO · auto_distance_ready · Đã đạt khoảng cách 20–25 cm; chuẩn bị S1 → S2 → xoay → kẹp → nâng · Vật khóa: can · BIN 4
+AUTO · auto_tof_final_pose · VL53 xác nhận20–25cm; đưa tay từng bước tới2310/650, chờ D19 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_forward · Chờ D19: tiến 160ms, nhịp 1/3 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_forward · Chờ D19: tiến 160ms, nhịp 2/3 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_ready · D19 ổn định tại2310/650; cho phép đóng kẹp · Vật khóa: can · BIN 4
+AUTO · auto_grip · Vật đã căn đúng và IR phát hiện; đóng kẹp · Vật khóa: can · BIN 4
+AUTO · auto_lift · Nâng S2 về SEARCH, giữ kẹp đóng · Vật khóa: can · BIN 4
+AUTO · auto_place · IR D19 vẫn thấy vật sau nâng · đưa vật tới BIN 4 đã xoay · Vật khóa: can · BIN 4
+AUTO · auto_open_lid · Đã gắp/nâng/đưa vật tới vị trí thả; mở nắp · Vật khóa: can · BIN 4
+AUTO · auto_release · Thả vật vào BIN 4 · Vật khóa: can · BIN 4
+AUTO · auto_cycle_done · Hoàn tất một lượt theo phản hồi hiện diện IR · Vật khóa: can · BIN 4
+AUTO · auto_done · AUTO hoàn tất; bánh đã dừng · Vật khóa: can · BIN 4
+_______________ test_old_d22_firmware_protocol_cannot_enable_d4 ________________
+
+robot = (<brain.Brain object at 0x7f6fca988bf0>, <transport.SimTransport object at 0x7f6fca98b5c0>)
+
+    def test_old_d22_firmware_protocol_cannot_enable_d4(robot):
+        b,hw=robot;hw.state['gift_protocol']=2
+        b.last_hw=hw.request('STATUS');n=len(hw.commands)
+        assert not b.snapshot()['gift']['available']
+>       with pytest.raises(ValueError,match='V3.16.10'):b.command('GIFT DISPENSE',b.epoch)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'V3.16.10'
+E         Actual message: 'Cần nạp firmware V3.16.11 hỗ trợ D4 tới 2500 us'
+
+tests/test_gift_d4_v3169.py:27: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_distance_window_v31611.py::test_all_config_sources_agree - ...
+FAILED tests/test_box_tof_flow.py::test_camera_guides_show_new_flow_and_leave_raw_frame_clean
+FAILED tests/test_box_tof_recovery.py::test_range_confirmation_can_start_at_current_stored_pose[1550-both_sides-300]
+FAILED tests/test_box_tof_recovery.py::test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision[both]
+FAILED tests/test_box_tof_recovery.py::test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision[missing]
+FAILED tests/test_gift_d4_v3169.py::test_old_d22_firmware_protocol_cannot_enable_d4
+6 failed, 132 passed in 121.60s (0:02:01)

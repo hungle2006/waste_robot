@@ -1,0 +1,14 @@
+{
+  "baseline_sha256": "1fd663bc8920f8ee15c94cebc6f3d72468cf0bab25d64938b94d93d555ad1dd6",
+  "changed_existing_files": [
+    "README_CHAY_TRUOC.md",
+    "python/box_tof_flow.py",
+    "python/check_system.py",
+    "python/main.py",
+    "python/server.py"
+  ],
+  "preserved_firmware_and_env_files": 82,
+  "tests": "63 passed; final diagnostic tests 5 passed after retry throttle adjustment. STOP test accepts both cancellation and owner-invalidated AutoFault; both prevent motion.",
+  "hardware_tested": false,
+  "physical_invalid_range_cause": "unknown; raw robot status required"
+}

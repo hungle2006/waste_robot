@@ -1,0 +1,301 @@
+bringing up nodes...
+bringing up nodes...
+
+.............................................F.......................... [ 16%]
+........................................................................ [ 33%]
+........................................................................ [ 50%]
+........................................................................ [ 67%]
+...............................FF....................................... [ 84%]
+................................................................         [100%]
+=================================== FAILURES ===================================
+_____________ test_size_limit_can_stop_forward_before_bottom_line ______________
+[gw0] linux -- Python 3.12.14 /workspace/scratch/afcbd1fb0e25/qa_venv/bin/python
+
+fut = <Future cancelled>, timeout = 15
+
+    async def wait_for(fut, timeout):
+        """Wait for the single Future or coroutine to complete, with timeout.
+    
+        Coroutine will be wrapped in Task.
+    
+        Returns result of the Future or coroutine.  When a timeout occurs,
+        it cancels the task and raises TimeoutError.  To avoid the task
+        cancellation, wrap it in shield().
+    
+        If the wait is cancelled, the task is also cancelled.
+    
+        If the task suppresses the cancellation and returns a value instead,
+        that value is returned.
+    
+        This function is a coroutine.
+        """
+        # The special case for timeout <= 0 is for the following case:
+        #
+        # async def test_waitfor():
+        #     func_started = False
+        #
+        #     async def func():
+        #         nonlocal func_started
+        #         func_started = True
+        #
+        #     try:
+        #         await asyncio.wait_for(func(), 0)
+        #     except asyncio.TimeoutError:
+        #         assert not func_started
+        #     else:
+        #         assert False
+        #
+        # asyncio.run(test_waitfor())
+    
+    
+        if timeout is not None and timeout <= 0:
+            fut = ensure_future(fut)
+    
+            if fut.done():
+                return fut.result()
+    
+            await _cancel_and_wait(fut)
+            try:
+                return fut.result()
+            except exceptions.CancelledError as exc:
+                raise TimeoutError from exc
+    
+        async with timeouts.timeout(timeout):
+>           return await fut
+                   ^^^^^^^^^
+E           asyncio.exceptions.CancelledError
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/tasks.py:520: CancelledError
+
+The above exception was the direct cause of the following exception:
+
+robot = (<brain.Brain object at 0x7f0f48dc6990>, <transport.SimTransport object at 0x7f0f48dc6930>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-11/popen-gw0/test_size_limit_can_stop_forwa0')
+
+    def test_size_limit_can_stop_forward_before_bottom_line(robot,tmp_path):
+        async def run():
+            b,hw=robot;a,v,_,_=configured(b,hw,tmp_path/'auto.json');v.close_by_size=True;n=len(hw.commands)
+            await a.start();await finish(a)
+            assert a.state['state']=='auto_done',a.state
+            sent=hw.commands[n:]
+            assert len([s for s in sent if s.startswith('C 100 0 0 ')])==1
+            assert 'P 1 1320' in sent
+>       asyncio.run(run())
+
+tests/test_approach.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_approach.py:86: in run
+    await a.start();await finish(a)
+                    ^^^^^^^^^^^^^^^
+tests/test_auto.py:65: in finish
+    await asyncio.wait_for(asyncio.shield(a.task),timeout)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/tasks.py:519: in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Timeout [expired]>
+exc_type = <class 'asyncio.exceptions.CancelledError'>
+exc_val = CancelledError(), exc_tb = <traceback object at 0x7f0f730da040>
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Optional[bool]:
+        assert self._state in (_State.ENTERED, _State.EXPIRING)
+    
+        if self._timeout_handler is not None:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
+    
+        if self._state is _State.EXPIRING:
+            self._state = _State.EXPIRED
+    
+            if self._task.uncancel() <= self._cancelling and exc_type is exceptions.CancelledError:
+                # Since there are no new cancel requests, we're
+                # handling this.
+>               raise TimeoutError from exc_val
+E               TimeoutError
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/timeouts.py:115: TimeoutError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_search · Đưa tay về SEARCH; chỉ căn bánh khi tay đứng yên
+AUTO · auto_classified · plastic bottle · BIN 1
+AUTO · auto_sort · Phân loại BIN 1; đóng nắp rồi xoay đúng ngăn
+AUTO · auto_base_observe · SEARCH · lệch ngang 0.0% · đáy 54.0% · rw 0.36
+AUTO · auto_base_move · FORWARD 120 ms; tay giữ SEARCH
+AUTO · auto_base_observe · SEARCH · lệch ngang 0.0% · đáy 54.0% · rw 0.43
+AUTO · auto_base_observe · SEARCH · lệch ngang 0.0% · đáy 54.0% · rw 0.43
+AUTO · auto_base_done · Đã tới vùng tiếp cận và căn ngang; dừng bánh, chuyển sang hạ tay
+AUTO · auto_arm_observe · S2 1320 µs · lệch 0.0%, 2.0% · bánh đứng yên
+AUTO · auto_arm_observe · S2 1320 µs · lệch 0.0%, 2.0% · bánh đứng yên
+AUTO · auto_arm_observe · S2 1340 µs · lệch 0.0%, 1.0% · bánh đứng yên
+AUTO · auto_arm_observe · S2 1340 µs · lệch 0.0%, 1.0% · bánh đứng yên
+AUTO · auto_arm_observe · S2 1360 µs · lệch 0.0%, 0.0% · bánh đứng yên
+AUTO · auto_arm_observe · S2 1360 µs · lệch 0.0%, 0.0% · bánh đứng yên
+AUTO · auto_near_wait · Ảnh đã căn và D19 phát hiện · rw=0.06; giữ tay/bánh, chờ IR
+AUTO · auto_near_contact · Đã căn trước đó và IR xác nhận ổn định; chuyển sang gắp
+AUTO · auto_grip · Vật đã căn đúng và IR phát hiện; đóng kẹp
+AUTO · auto_lift · Nâng S2 về SEARCH, giữ kẹp đóng
+AUTO · auto_place · IR D19 vẫn thấy vật sau nâng · đưa vật tới BIN 1 đã xoay
+AUTO · auto_open_lid · Đã gắp/nâng/đưa vật tới vị trí thả; mở nắp
+AUTO · auto_release · Thả vật vào BIN 1
+_______ test_measured_profile_feedback_and_ir_gate[no_ir-auto_near_hold] _______
+[gw0] linux -- Python 3.12.14 /workspace/scratch/afcbd1fb0e25/qa_venv/bin/python
+
+robot = (<brain.Brain object at 0x7f0f00ae1c70>, <transport.SimTransport object at 0x7f0f00ae3410>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-11/popen-gw0/test_measured_profile_feedback5')
+mode = 'no_ir', expected = 'auto_near_hold'
+
+    @pytest.mark.parametrize('mode,expected',[
+        ('aligned','auto_done'),('forward','auto_done'),('back','auto_done'),
+        ('stuck','auto_near_hold'),('wrong','auto_near_hold'),('lost','auto_near_hold'),
+        ('early_ir','auto_near_hold'),('no_ir','auto_near_hold'),
+        ('side_clip','auto_near_hold'),('final_mismatch','auto_near_hold'),
+    ])
+    def test_measured_profile_feedback_and_ir_gate(robot,tmp_path,mode,expected):
+        async def run():
+            b,hw,a,world,c=setup_measured(robot,tmp_path,mode);n=len(hw.commands)
+            await a.start();await finish(a,timeout=25)
+            assert a.state['state']==expected,a.state
+            sent=hw.commands[n:];drives=[x for x in sent if x.startswith('G ')]
+            if mode=='forward':assert len(drives)==1 and drives[0].startswith('G 100 0 0 ')
+            if mode=='back':assert len(drives)==1 and drives[0].startswith('G -100 0 0 ')
+            if mode=='stuck':assert len(drives)==4 and 'P 1 1350' not in sent
+            if mode=='wrong':assert len(drives)==1 and 'P 1 1350' not in sent
+            if expected=='auto_done':
+                assert world.released and 'P 10 936' in sent
+                grip=sent.index('S 3 1400');assert sent.index('P 1 1400')<grip
+                assert 'P 10 936' in sent[grip:] and 'P 10 950' in sent[grip:]
+                assert not any(x.startswith('G ') for x in sent[sent.index('P 1 1400'):])
+            else:assert 'S 3 1400' not in sent
+>       asyncio.run(run())
+
+tests/test_pose_profile.py:140: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        b,hw,a,world,c=setup_measured(robot,tmp_path,mode);n=len(hw.commands)
+        await a.start();await finish(a,timeout=25)
+>       assert a.state['state']==expected,a.state
+E       AssertionError: {'state': 'auto_error', 'message': 'Arduino mất kết nối/đã dừng', 'auto_running': False, 'cycles': 0, ...}
+E       assert 'auto_error' == 'auto_near_hold'
+E         
+E         - auto_near_hold
+E         + auto_error
+
+tests/test_pose_profile.py:128: AssertionError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_search · Đưa tay về SEARCH; chỉ căn bánh khi tay đứng yên
+AUTO · auto_sort · Phân loại BIN 1; đóng nắp rồi xoay đúng ngăn
+AUTO · auto_error · Arduino mất kết nối/đã dừng
+________ test_measured_profile_feedback_and_ir_gate[forward-auto_done] _________
+[gw1] linux -- Python 3.12.14 /workspace/scratch/afcbd1fb0e25/qa_venv/bin/python
+
+robot = (<brain.Brain object at 0x7f04380886e0>, <transport.SimTransport object at 0x7f0438089ee0>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-11/popen-gw1/test_measured_profile_feedback1')
+mode = 'forward', expected = 'auto_done'
+
+    @pytest.mark.parametrize('mode,expected',[
+        ('aligned','auto_done'),('forward','auto_done'),('back','auto_done'),
+        ('stuck','auto_near_hold'),('wrong','auto_near_hold'),('lost','auto_near_hold'),
+        ('early_ir','auto_near_hold'),('no_ir','auto_near_hold'),
+        ('side_clip','auto_near_hold'),('final_mismatch','auto_near_hold'),
+    ])
+    def test_measured_profile_feedback_and_ir_gate(robot,tmp_path,mode,expected):
+        async def run():
+            b,hw,a,world,c=setup_measured(robot,tmp_path,mode);n=len(hw.commands)
+            await a.start();await finish(a,timeout=25)
+            assert a.state['state']==expected,a.state
+            sent=hw.commands[n:];drives=[x for x in sent if x.startswith('G ')]
+            if mode=='forward':assert len(drives)==1 and drives[0].startswith('G 100 0 0 ')
+            if mode=='back':assert len(drives)==1 and drives[0].startswith('G -100 0 0 ')
+            if mode=='stuck':assert len(drives)==4 and 'P 1 1350' not in sent
+            if mode=='wrong':assert len(drives)==1 and 'P 1 1350' not in sent
+            if expected=='auto_done':
+                assert world.released and 'P 10 936' in sent
+                grip=sent.index('S 3 1400');assert sent.index('P 1 1400')<grip
+                assert 'P 10 936' in sent[grip:] and 'P 10 950' in sent[grip:]
+                assert not any(x.startswith('G ') for x in sent[sent.index('P 1 1400'):])
+            else:assert 'S 3 1400' not in sent
+>       asyncio.run(run())
+
+tests/test_pose_profile.py:140: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        b,hw,a,world,c=setup_measured(robot,tmp_path,mode);n=len(hw.commands)
+        await a.start();await finish(a,timeout=25)
+>       assert a.state['state']==expected,a.state
+E       AssertionError: {'state': 'auto_error', 'message': 'Arduino mất kết nối/đã dừng', 'auto_running': False, 'cycles': 0, ...}
+E       assert 'auto_error' == 'auto_done'
+E         
+E         - auto_done
+E         + auto_error
+
+tests/test_pose_profile.py:128: AssertionError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_search · Đưa tay về SEARCH; chỉ căn bánh khi tay đứng yên
+AUTO · auto_sort · Phân loại BIN 1; đóng nắp rồi xoay đúng ngăn
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1300/P10=950 · tham chiếu ống kính 75.0 cm
+AUTO · auto_pose_drive · FORWARD 60 ms danh định; tay đứng yên, chờ ảnh mới
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1300/P10=950 · tham chiếu ống kính 75.0 cm
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1300/P10=950 · tham chiếu ống kính 75.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1350 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1350/P10=936 · tham chiếu ống kính 45.0 cm
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1350/P10=936 · tham chiếu ống kính 45.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1400 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1400/P10=920 · tham chiếu ống kính 24.0 cm
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1400/P10=920 · tham chiếu ống kính 24.0 cm
+AUTO · auto_grasp_pose_confirmed · Đúng cặp xung gắp đã đo ở mốc 27 cm; ảnh gần ổn định, chờ D19. Không suy ra khoảng cách chai hiện tại
+AUTO · auto_near_wait · Ảnh gần tại tư thế gắp đã xác nhận; giữ nguyên, chờ IR D19 · rw=0.50; giữ tay/bánh, chờ IR
+AUTO · auto_near_contact · Đã căn trước đó và IR xác nhận ổn định; chuyển sang gắp
+AUTO · auto_grip · Vật đã căn đúng và IR phát hiện; đóng kẹp
+AUTO · auto_lift · Nâng S2 về SEARCH, giữ kẹp đóng
+AUTO · auto_place · IR D19 vẫn thấy vật sau nâng · đưa vật tới BIN 1 đã xoay
+AUTO · auto_open_lid · Đã gắp/nâng/đưa vật tới vị trí thả; mở nắp
+AUTO · auto_release · Thả vật vào BIN 1
+AUTO · auto_error · Arduino mất kết nối/đã dừng
+=============================== warnings summary ===============================
+tests/test_auto.py::test_relative_settings_save_without_recording_or_hardware_motion
+tests/test_approach.py::test_approach_ui_save_does_not_move_hardware
+  /workspace/scratch/afcbd1fb0e25/qa_venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_approach.py::test_size_limit_can_stop_forward_before_bottom_line
+FAILED tests/test_pose_profile.py::test_measured_profile_feedback_and_ir_gate[no_ir-auto_near_hold]
+FAILED tests/test_pose_profile.py::test_measured_profile_feedback_and_ir_gate[forward-auto_done]
+3 failed, 421 passed, 2 warnings in 311.08s (0:05:11)

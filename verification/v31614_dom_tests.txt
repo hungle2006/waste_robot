@@ -1,0 +1,1 @@
+PASS: initial load sends no actuator commands; 2300us display; shared camera; gift; fullscreen fallback; STOP; guides; camera loss/recovery; responsive CSS hooks.

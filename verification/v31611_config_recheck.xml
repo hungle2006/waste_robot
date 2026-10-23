@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.164" timestamp="2026-10-21T09:54:22.129172-05:00" hostname="dd67e7c6c248"><testcase classname="tests.test_distance_window_v31611" name="test_all_config_sources_agree" time="0.016" /></testsuite></testsuites>

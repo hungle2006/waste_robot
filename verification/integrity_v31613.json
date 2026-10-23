@@ -1,0 +1,28 @@
+{
+  "baseline": "waste_robot_v3_16_12_ir_after_lower_160ms_full_env.zip",
+  "baseline_sha256": "d1153dc10cb3f1039ca8164a1e7a86e64e92cf232f22307274a0e9d8dd5e9bf8",
+  "missing_baseline_files": [],
+  "protected_files_byte_identical": 82,
+  "changed_files": [
+    "README_CHAY_TRUOC.md",
+    "python/auto_controller.py",
+    "python/box_tof_flow.py",
+    "python/check_system.py",
+    "python/main.py",
+    "python/server.py",
+    "web/operator.html"
+  ],
+  "verified_related_cases": 174,
+  "physical_robot_tested": false,
+  "early_ir_behavior": "stop wheels, lower fully, recheck current IR before closing",
+  "distance_window_mm": [
+    200,
+    250
+  ],
+  "roi": [
+    10,
+    10
+  ],
+  "gift_pin": 4,
+  "grip_close_us": 2000
+}

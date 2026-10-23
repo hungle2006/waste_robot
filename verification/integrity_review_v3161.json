@@ -1,0 +1,22 @@
+{
+  "version": "3.16.1",
+  "python_review_distinct_tests": 155,
+  "operator_group_passed": 69,
+  "control_group_passed": 38,
+  "auto_rear_group_passed": 53,
+  "new_python_regressions": 6,
+  "app_tests_passed": 18,
+  "app_build": "passed",
+  "python_syntax_files": 31,
+  "local_js_syntax": "passed",
+  "firmware_identical_files": 81,
+  "environment_identical_files": 1,
+  "hardware_tested": false,
+  "web_production_updated": true,
+  "prepared_web_commit": "1d235f5b4cf526e1e24f81333d6029e89b780e3c",
+  "deployment_blocker": null,
+  "web_commit": "1d235f5b4cf526e1e24f81333d6029e89b780e3c",
+  "deployment_id": "dpl_4XL8hkNwyBz2zVDzXv4bBa51uyMX",
+  "deployment_state": "READY",
+  "deployment_environment": "production"
+}

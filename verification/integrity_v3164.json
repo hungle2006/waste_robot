@@ -1,0 +1,33 @@
+{
+  "version": "3.16.4",
+  "baseline_sha256": "f56072a002574a32cb378b12504af1c7ccbcb650cf7c19a6dc2205e2401b051e",
+  "changed_existing_files": [
+    "README_CHAY_TRUOC.md",
+    "arduino/robot_control_v3/robot_control_v3.ino",
+    "python/auto_controller.py",
+    "python/box_tof_flow.py",
+    "python/brain.py",
+    "python/check_system.py",
+    "python/main.py",
+    "python/server.py",
+    "python/transport.py",
+    "tests/firmware_host/harness.cpp",
+    "tests/test_box_tof_flow.py",
+    "tests/test_box_tof_recovery.py",
+    "tests/test_vl53_diagnostics_v3163.py"
+  ],
+  "unchanged_existing_files": 220,
+  "env_unchanged": true,
+  "firmware_change": "robot_control_v3.ino only; flash required",
+  "validation": {
+    "initial_focused": "9 passed",
+    "regression": "122 passed, 1 failed: obsolete assertion that invalid ToF forbids forward motion",
+    "updated_failed_case": "Updated expectation to require forward pulses for invalid range, still forbid arm/grip; both parametrized cases passed (verification/v3164_updated_expectation.txt)",
+    "operator": "63 passed",
+    "python_syntax": "54 files parsed; configuration check passed",
+    "firmware": "Actual sketch compiled and executed with C++ host stubs; strict legacy TF, AUTO missing/invalid/stale, valid near braking, STOP and D18/D19 tested",
+    "hardware_tested": false,
+    "avr_board_compile_performed": false
+  },
+  "behavior": "AUTO continues finite pulses without valid ToF; valid 250–300 mm starts handoff; STOP, ownership, D18/D19 and existing travel limits retained"
+}

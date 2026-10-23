@@ -1,0 +1,263 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+______________ test_invalid_reading_reports_raw_diagnostic_fields ______________
+
+robot = (<brain.Brain object at 0x7f57c041dfa0>, <transport.SimTransport object at 0x7f57c0f9deb0>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-6/test_invalid_reading_reports_r0')
+
+    def test_invalid_reading_reports_raw_diagnostic_fields(robot, tmp_path):
+        b, hw, a, _ = prepared(robot, tmp_path)
+        invalid_range(b, hw)
+        with pytest.raises(ValueError) as error:
+            tof_sample(b.snapshot(), a.cfg['box_tof_flow'], check_age=False)
+        message = str(error.value)
+>       assert 'valid=False' in message and 'status=2' in message
+E       AssertionError: assert ('valid=False' in 'Mẫu VL53 không hợp lệ')
+
+tests/test_vl53_diagnostics_v3163.py:25: AssertionError
+_________ test_identical_invalid_retries_emit_at_most_once_per_second __________
+
+robot = (<brain.Brain object at 0x7f57c03fb0e0>, <transport.SimTransport object at 0x7f57c03fb140>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-6/test_identical_invalid_retries0')
+
+    def test_identical_invalid_retries_emit_at_most_once_per_second(robot, tmp_path):
+        async def run():
+            b, hw, a, _ = prepared(robot, tmp_path)
+            invalid_range(b, hw)
+            f = BoxToFFlow(a)
+            a.emit = AsyncMock()
+            for _ in range(30):
+                await f.report_range_retry(b.snapshot(), ValueError('invalid'))
+            assert a.emit.await_count == 1
+            f.retry_report_at -= 1.01
+            await f.report_range_retry(b.snapshot(), ValueError('invalid'))
+            assert a.emit.await_count == 2
+            assert a.emit.call_args.kwargs['tof_diagnostic']['status'] == 2
+>       asyncio.run(run())
+
+tests/test_vl53_diagnostics_v3163.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        b, hw, a, _ = prepared(robot, tmp_path)
+        invalid_range(b, hw)
+        f = BoxToFFlow(a)
+        a.emit = AsyncMock()
+        for _ in range(30):
+>           await f.report_range_retry(b.snapshot(), ValueError('invalid'))
+                  ^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'BoxToFFlow' object has no attribute 'report_range_retry'
+
+tests/test_vl53_diagnostics_v3163.py:36: AttributeError
+__ test_invalid_range_recovers_after_old_fault_timeout_without_manual_restart __
+
+self = <box_tof_flow.BoxToFFlow object at 0x7f57c03da660>, p1 = 1300
+
+    async def fresh_forward_sample(self, p1):
+        """Refresh USB; only a valid range is usable, with no ToF age gate."""
+        from auto_controller import NearHold
+        a = self.a
+        deadline = time.monotonic() + self.c['tof_fault_timeout_ms']/1000
+        while True:
+            a.check_rear()
+            await a.fresh_hardware()
+            s, _ = self.stationary_pose(p1)
+            if a.sensor('D19'):
+                raise NearHold('D19 nhận trước tư thế gắp; giữ tay/bánh')
+            try:
+>               return self.range_sample(s)
+                       ^^^^^^^^^^^^^^^^^^^^
+
+python/box_tof_flow.py:227: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/box_tof_flow.py:141: in range_sample
+    return tof_sample(snapshot, self.c, check_age=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+snapshot = {'connected': True, 'fresh': True, 'simulation': True, 'stopped': False, ...}
+cfg = {'enabled': True, 'require_visible_target': False, 'handoff_p1_us': 2050, 'handoff_p10_us': 727, ...}
+check_age = False
+
+    def tof_sample(snapshot, cfg, *, check_age=True):
+        hw = snapshot.get('hardware', {})
+        t = hw.get('tof', {})
+        if hw.get('tof_protocol') != 1 or t.get('present') is not True:
+            raise ValueError('Chưa có firmware/VL53L1X')
+        age, status_age = t.get('age_ms'), snapshot.get('age_ms')
+        if check_age and (type(age) is not int or age < 0 or type(status_age) not in (int, float)
+                or status_age < 0 or age + status_age > cfg['tof_max_age_ms']):
+            raise ValueError('Mẫu VL53 quá cũ/chưa có mẫu mới')
+        mm, seq = t.get('mm'), t.get('seq')
+        if (t.get('valid') is not True or type(t.get('status')) is not int or t['status'] != 0
+                or type(mm) is not int or not 1 <= mm <= 4000
+                or type(seq) is not int or not 1 <= seq <= 0xFFFFFFFF):
+>           raise ValueError('Mẫu VL53 không hợp lệ')
+E           ValueError: Mẫu VL53 không hợp lệ
+
+python/box_tof_flow.py:120: ValueError
+
+The above exception was the direct cause of the following exception:
+
+robot = (<brain.Brain object at 0x7f57c03ca090>, <transport.SimTransport object at 0x7f57c03ca060>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-6/test_invalid_range_recovers_af0')
+
+    def test_invalid_range_recovers_after_old_fault_timeout_without_manual_restart(robot, tmp_path):
+        async def run():
+            b, hw, a, _ = prepared(robot, tmp_path)
+            invalid_range(b, hw)
+            f = BoxToFFlow(a)
+            n = len(hw.commands)
+            async def recover():
+                await asyncio.sleep(1.2)  # Old fixture fault deadline was 1 second.
+                hw.tof_sample(280)
+            task = asyncio.create_task(recover())
+            try:
+                seq, mm = await asyncio.wait_for(f.fresh_forward_sample(1300), 4)
+                assert seq > 0 and mm == 280
+                assert sum(c.args[0] == 'auto_tof_retry' for c in a.emit.call_args_list) <= 2 if isinstance(a.emit, AsyncMock) else True
+                assert not any(c.startswith(('G ', 'C ', 'P ', 'S ')) for c in hw.commands[n:])
+            finally:
+                task.cancel(); await asyncio.gather(task, return_exceptions=True)
+>       asyncio.run(run())
+
+tests/test_vl53_diagnostics_v3163.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_vl53_diagnostics_v3163.py:56: in run
+    seq, mm = await asyncio.wait_for(f.fresh_forward_sample(1300), 4)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/tasks.py:520: in wait_for
+    return await fut
+           ^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <box_tof_flow.BoxToFFlow object at 0x7f57c03da660>, p1 = 1300
+
+    async def fresh_forward_sample(self, p1):
+        """Refresh USB; only a valid range is usable, with no ToF age gate."""
+        from auto_controller import NearHold
+        a = self.a
+        deadline = time.monotonic() + self.c['tof_fault_timeout_ms']/1000
+        while True:
+            a.check_rear()
+            await a.fresh_hardware()
+            s, _ = self.stationary_pose(p1)
+            if a.sensor('D19'):
+                raise NearHold('D19 nhận trước tư thế gắp; giữ tay/bánh')
+            try:
+                return self.range_sample(s)
+            except ValueError as exc:
+                await a.emit('auto_tof_retry', str(exc) + '; chưa cho nhịp tiến',
+                             phase=self.stage, tof_valid=False, tof_votes=0,
+                             tof_mm=None, tof_seq=None)
+                if time.monotonic() >= deadline:
+>                   raise NearHold('VL53 không trả số đo hợp lệ; chưa thể tiến tiếp') from exc
+E                   auto_controller.NearHold: VL53 không trả số đo hợp lệ; chưa thể tiến tiếp
+
+python/box_tof_flow.py:233: NearHold
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+______ test_invalid_range_timeout_preserves_diagnostics_and_does_not_move ______
+
+robot = (<brain.Brain object at 0x7f57c03caf90>, <transport.SimTransport object at 0x7f57c03caf30>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-6/test_invalid_range_timeout_pre0')
+
+    def test_invalid_range_timeout_preserves_diagnostics_and_does_not_move(robot, tmp_path):
+        async def run():
+            b, hw, a, _ = prepared(robot, tmp_path)
+            invalid_range(b, hw)
+            f = BoxToFFlow(a); f.c['tof_approach_timeout_ms'] = 100
+            n = len(hw.commands)
+            with pytest.raises(NearHold) as error:
+                await f.fresh_forward_sample(1300)
+            assert 'status=2' in str(error.value) and 'SignalFail' in str(error.value)
+            assert not any(c.startswith(('G ', 'C ', 'P ', 'S ')) for c in hw.commands[n:])
+>       asyncio.run(run())
+
+tests/test_vl53_diagnostics_v3163.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        b, hw, a, _ = prepared(robot, tmp_path)
+        invalid_range(b, hw)
+        f = BoxToFFlow(a); f.c['tof_approach_timeout_ms'] = 100
+        n = len(hw.commands)
+        with pytest.raises(NearHold) as error:
+            await f.fresh_forward_sample(1300)
+>       assert 'status=2' in str(error.value) and 'SignalFail' in str(error.value)
+E       AssertionError: assert ('status=2' in 'VL53 không trả số đo hợp lệ; chưa thể tiến tiếp')
+E        +  where 'VL53 không trả số đo hợp lệ; chưa thể tiến tiếp' = str(NearHold('VL53 không trả số đo hợp lệ; chưa thể tiến tiếp'))
+E        +    where NearHold('VL53 không trả số đo hợp lệ; chưa thể tiến tiếp') = <ExceptionInfo NearHold('VL53 không trả số đo hợp lệ; chưa thể tiến tiếp') tblen=2>.value
+
+tests/test_vl53_diagnostics_v3163.py:73: AssertionError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 không hợp lệ; chưa cho nhịp tiến · Vật khóa: can · BIN 4
+=========================== short test summary info ============================
+FAILED tests/test_vl53_diagnostics_v3163.py::test_invalid_reading_reports_raw_diagnostic_fields
+FAILED tests/test_vl53_diagnostics_v3163.py::test_identical_invalid_retries_emit_at_most_once_per_second
+FAILED tests/test_vl53_diagnostics_v3163.py::test_invalid_range_recovers_after_old_fault_timeout_without_manual_restart
+FAILED tests/test_vl53_diagnostics_v3163.py::test_invalid_range_timeout_preserves_diagnostics_and_does_not_move
+4 failed in 12.04s

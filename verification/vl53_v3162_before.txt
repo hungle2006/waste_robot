@@ -1,0 +1,717 @@
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+___ test_auto_range_ignores_age_but_default_manual_reader_stays_strict[300] ____
+
+robot = (<brain.Brain object at 0x7f972bda5880>, <transport.SimTransport object at 0x7f972bda4b00>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_auto_range_ignores_age_bu0')
+age_ms = 300
+
+    @pytest.mark.parametrize('age_ms', [300, 5000, None])
+    def test_auto_range_ignores_age_but_default_manual_reader_stays_strict(robot, tmp_path, age_ms):
+        b, hw, a, _ = prepared(robot, tmp_path)
+        cached_range(b, hw)
+        s = b.snapshot(); s['hardware']['tof']['age_ms'] = age_ms
+        with pytest.raises(ValueError):
+            tof_sample(s, a.cfg['box_tof_flow'])
+>       assert tof_sample(s, a.cfg['box_tof_flow'], check_age=False)[1] == 280
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: tof_sample() got an unexpected keyword argument 'check_age'
+
+tests/test_vl53_auto_ready_v3162.py:30: TypeError
+___ test_auto_range_ignores_age_but_default_manual_reader_stays_strict[5000] ___
+
+robot = (<brain.Brain object at 0x7f972bd7bcb0>, <transport.SimTransport object at 0x7f972bd7bd10>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_auto_range_ignores_age_bu1')
+age_ms = 5000
+
+    @pytest.mark.parametrize('age_ms', [300, 5000, None])
+    def test_auto_range_ignores_age_but_default_manual_reader_stays_strict(robot, tmp_path, age_ms):
+        b, hw, a, _ = prepared(robot, tmp_path)
+        cached_range(b, hw)
+        s = b.snapshot(); s['hardware']['tof']['age_ms'] = age_ms
+        with pytest.raises(ValueError):
+            tof_sample(s, a.cfg['box_tof_flow'])
+>       assert tof_sample(s, a.cfg['box_tof_flow'], check_age=False)[1] == 280
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: tof_sample() got an unexpected keyword argument 'check_age'
+
+tests/test_vl53_auto_ready_v3162.py:30: TypeError
+___ test_auto_range_ignores_age_but_default_manual_reader_stays_strict[None] ___
+
+robot = (<brain.Brain object at 0x7f972bd5f9b0>, <transport.SimTransport object at 0x7f972bd5f9e0>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_auto_range_ignores_age_bu2')
+age_ms = None
+
+    @pytest.mark.parametrize('age_ms', [300, 5000, None])
+    def test_auto_range_ignores_age_but_default_manual_reader_stays_strict(robot, tmp_path, age_ms):
+        b, hw, a, _ = prepared(robot, tmp_path)
+        cached_range(b, hw)
+        s = b.snapshot(); s['hardware']['tof']['age_ms'] = age_ms
+        with pytest.raises(ValueError):
+            tof_sample(s, a.cfg['box_tof_flow'])
+>       assert tof_sample(s, a.cfg['box_tof_flow'], check_age=False)[1] == 280
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: tof_sample() got an unexpected keyword argument 'check_age'
+
+tests/test_vl53_auto_ready_v3162.py:30: TypeError
+_ test_auto_accepts_one_in_range_sample_without_new_sequence_or_window_streak __
+
+self = <box_tof_flow.BoxToFFlow object at 0x7f972bd50e30>, reason = 'handoff'
+
+    async def sensor_approach(self, reason='handoff'):
+        from auto_controller import NearHold, AutoFault
+        a, c = self.a, self.c
+        _, p1 = self.stationary_pose()
+        if (p1 > c['handoff_p1_us'] or not self.last_obj or a.selected_bin != a.locked_bin
+                or reason not in ('handoff', 'both_sides', 'forward_range')):
+            raise AutoFault('Chưa đủ khóa vật/tư thế để bàn giao VL53')
+        if reason == 'handoff' and p1 != c['handoff_p1_us']:
+            raise AutoFault('Chưa tới mốc bàn giao tay2050/727')
+        if reason == 'forward_range' and self.last_action != 'FORWARD':
+            raise AutoFault('Chưa có hành động tiến để bàn giao VL53 sớm')
+        margin = a.cfg['pose_profile']['side_margin_norm']
+        box = self.last_obj['bbox_norm']
+        if reason == 'both_sides' and not (box[0] <= margin and box[2] >= 1-margin):
+            raise AutoFault('Box chưa chạm cả hai mép để bàn giao VL53 sớm')
+        self.tof_pose = p1
+        a.vision_paused = True
+        a.observed_jpeg = None
+        a.clear_overlay()
+        self.stage = 'tof_approach'
+        why = {'handoff': 'Đạt2050/727', 'both_sides': 'Box chạm cả hai mép trái/phải',
+               'forward_range': 'VL53 đã tới ngưỡng khi đang tiến, kể cả mất box'}[reason]
+        await a.emit('auto_tof_handoff', why + ': dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53',
+                     phase=self.stage, s2_us=p1, p10_us=targets_at(self.path, p1)['p10'],
+                     tof_entry_reason=reason,
+                     vision_mode='tof_only', target_bbox=None, target_bbox_norm=None)
+        await self.set_tof_guard(True)
+        deadline = time.monotonic() + c['tof_approach_timeout_ms'] / 1000
+        last_seq = None
+        votes = pulses = 0
+        last_new = time.monotonic()
+        while time.monotonic() < deadline:
+            a.check_rear()
+            s, _ = self.stationary_pose(p1)
+            if a.sensor('D19'):
+                raise NearHold('D19 nhận khi đang tiếp cận VL53; chưa đúng tư thế gắp cuối')
+            try:
+>               seq, mm = tof_sample(s, c)
+                          ^^^^^^^^^^^^^^^^
+
+python/box_tof_flow.py:442: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+snapshot = {'connected': True, 'fresh': True, 'simulation': True, 'stopped': False, ...}
+cfg = {'enabled': True, 'require_visible_target': False, 'handoff_p1_us': 2050, 'handoff_p10_us': 727, ...}
+
+    def tof_sample(snapshot, cfg):
+        hw = snapshot.get('hardware', {})
+        t = hw.get('tof', {})
+        if hw.get('tof_protocol') != 1 or t.get('present') is not True:
+            raise ValueError('Chưa có firmware/VL53L1X')
+        age, status_age = t.get('age_ms'), snapshot.get('age_ms')
+        if (type(age) is not int or age < 0 or type(status_age) not in (int, float)
+                or status_age < 0 or age + status_age > cfg['tof_max_age_ms']):
+>           raise ValueError('Mẫu VL53 quá cũ/chưa có mẫu mới')
+E           ValueError: Mẫu VL53 quá cũ/chưa có mẫu mới
+
+python/box_tof_flow.py:114: ValueError
+
+The above exception was the direct cause of the following exception:
+
+robot = (<brain.Brain object at 0x7f972bd73fb0>, <transport.SimTransport object at 0x7f972bd73fe0>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_auto_accepts_one_in_range0')
+
+    def test_auto_accepts_one_in_range_sample_without_new_sequence_or_window_streak(robot, tmp_path):
+        async def run():
+            b, hw, a, _ = prepared(robot, tmp_path)
+            hw.state['joints'].update(targets_at(a.cfg['arm_path'], 2050))
+            cached_range(b, hw)
+            f = BoxToFFlow(a); f.last_obj = copy.deepcopy(a.target)
+            f.final_approach = AsyncMock(return_value='grasp')
+            n = len(hw.commands)
+            assert await f.sensor_approach() == 'grasp'
+            assert f.tof_confirmed and not hw.state['tof']['guard']
+            f.final_approach.assert_awaited_once()
+            assert a.state['distance_ready'] and a.state['tof_votes'] == 1
+            assert not any(c.startswith(('P ', 'S ', 'G ')) for c in hw.commands[n:])
+>       asyncio.run(run())
+
+tests/test_vl53_auto_ready_v3162.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_vl53_auto_ready_v3162.py:41: in run
+    assert await f.sensor_approach() == 'grasp'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <box_tof_flow.BoxToFFlow object at 0x7f972bd50e30>, reason = 'handoff'
+
+    async def sensor_approach(self, reason='handoff'):
+        from auto_controller import NearHold, AutoFault
+        a, c = self.a, self.c
+        _, p1 = self.stationary_pose()
+        if (p1 > c['handoff_p1_us'] or not self.last_obj or a.selected_bin != a.locked_bin
+                or reason not in ('handoff', 'both_sides', 'forward_range')):
+            raise AutoFault('Chưa đủ khóa vật/tư thế để bàn giao VL53')
+        if reason == 'handoff' and p1 != c['handoff_p1_us']:
+            raise AutoFault('Chưa tới mốc bàn giao tay2050/727')
+        if reason == 'forward_range' and self.last_action != 'FORWARD':
+            raise AutoFault('Chưa có hành động tiến để bàn giao VL53 sớm')
+        margin = a.cfg['pose_profile']['side_margin_norm']
+        box = self.last_obj['bbox_norm']
+        if reason == 'both_sides' and not (box[0] <= margin and box[2] >= 1-margin):
+            raise AutoFault('Box chưa chạm cả hai mép để bàn giao VL53 sớm')
+        self.tof_pose = p1
+        a.vision_paused = True
+        a.observed_jpeg = None
+        a.clear_overlay()
+        self.stage = 'tof_approach'
+        why = {'handoff': 'Đạt2050/727', 'both_sides': 'Box chạm cả hai mép trái/phải',
+               'forward_range': 'VL53 đã tới ngưỡng khi đang tiến, kể cả mất box'}[reason]
+        await a.emit('auto_tof_handoff', why + ': dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53',
+                     phase=self.stage, s2_us=p1, p10_us=targets_at(self.path, p1)['p10'],
+                     tof_entry_reason=reason,
+                     vision_mode='tof_only', target_bbox=None, target_bbox_norm=None)
+        await self.set_tof_guard(True)
+        deadline = time.monotonic() + c['tof_approach_timeout_ms'] / 1000
+        last_seq = None
+        votes = pulses = 0
+        last_new = time.monotonic()
+        while time.monotonic() < deadline:
+            a.check_rear()
+            s, _ = self.stationary_pose(p1)
+            if a.sensor('D19'):
+                raise NearHold('D19 nhận khi đang tiếp cận VL53; chưa đúng tư thế gắp cuối')
+            try:
+                seq, mm = tof_sample(s, c)
+            except ValueError as exc:
+                votes = 0
+                await a.emit('auto_tof_retry', str(exc) + '; bánh giữ yên', phase=self.stage,
+                             tof_valid=False, tof_votes=0, tof_mm=None, tof_seq=None)
+                if time.monotonic()-last_new >= c['tof_fault_timeout_ms']/1000:
+>                   raise NearHold('VL53 lỗi/cũ quá lâu; giữ tay/bánh') from exc
+E                   auto_controller.NearHold: VL53 lỗi/cũ quá lâu; giữ tay/bánh
+
+python/box_tof_flow.py:448: NearHold
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_handoff · Đạt2050/727: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+_____ test_auto_handover_does_not_expire_while_reporting_or_disabling_tof ______
+
+self = <box_tof_flow.BoxToFFlow object at 0x7f972bd70170>, reason = 'handoff'
+
+    async def sensor_approach(self, reason='handoff'):
+        from auto_controller import NearHold, AutoFault
+        a, c = self.a, self.c
+        _, p1 = self.stationary_pose()
+        if (p1 > c['handoff_p1_us'] or not self.last_obj or a.selected_bin != a.locked_bin
+                or reason not in ('handoff', 'both_sides', 'forward_range')):
+            raise AutoFault('Chưa đủ khóa vật/tư thế để bàn giao VL53')
+        if reason == 'handoff' and p1 != c['handoff_p1_us']:
+            raise AutoFault('Chưa tới mốc bàn giao tay2050/727')
+        if reason == 'forward_range' and self.last_action != 'FORWARD':
+            raise AutoFault('Chưa có hành động tiến để bàn giao VL53 sớm')
+        margin = a.cfg['pose_profile']['side_margin_norm']
+        box = self.last_obj['bbox_norm']
+        if reason == 'both_sides' and not (box[0] <= margin and box[2] >= 1-margin):
+            raise AutoFault('Box chưa chạm cả hai mép để bàn giao VL53 sớm')
+        self.tof_pose = p1
+        a.vision_paused = True
+        a.observed_jpeg = None
+        a.clear_overlay()
+        self.stage = 'tof_approach'
+        why = {'handoff': 'Đạt2050/727', 'both_sides': 'Box chạm cả hai mép trái/phải',
+               'forward_range': 'VL53 đã tới ngưỡng khi đang tiến, kể cả mất box'}[reason]
+        await a.emit('auto_tof_handoff', why + ': dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53',
+                     phase=self.stage, s2_us=p1, p10_us=targets_at(self.path, p1)['p10'],
+                     tof_entry_reason=reason,
+                     vision_mode='tof_only', target_bbox=None, target_bbox_norm=None)
+        await self.set_tof_guard(True)
+        deadline = time.monotonic() + c['tof_approach_timeout_ms'] / 1000
+        last_seq = None
+        votes = pulses = 0
+        last_new = time.monotonic()
+        while time.monotonic() < deadline:
+            a.check_rear()
+            s, _ = self.stationary_pose(p1)
+            if a.sensor('D19'):
+                raise NearHold('D19 nhận khi đang tiếp cận VL53; chưa đúng tư thế gắp cuối')
+            try:
+>               seq, mm = tof_sample(s, c)
+                          ^^^^^^^^^^^^^^^^
+
+python/box_tof_flow.py:442: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+snapshot = {'connected': True, 'fresh': True, 'simulation': True, 'stopped': False, ...}
+cfg = {'enabled': True, 'require_visible_target': False, 'handoff_p1_us': 2050, 'handoff_p10_us': 727, ...}
+
+    def tof_sample(snapshot, cfg):
+        hw = snapshot.get('hardware', {})
+        t = hw.get('tof', {})
+        if hw.get('tof_protocol') != 1 or t.get('present') is not True:
+            raise ValueError('Chưa có firmware/VL53L1X')
+        age, status_age = t.get('age_ms'), snapshot.get('age_ms')
+        if (type(age) is not int or age < 0 or type(status_age) not in (int, float)
+                or status_age < 0 or age + status_age > cfg['tof_max_age_ms']):
+>           raise ValueError('Mẫu VL53 quá cũ/chưa có mẫu mới')
+E           ValueError: Mẫu VL53 quá cũ/chưa có mẫu mới
+
+python/box_tof_flow.py:114: ValueError
+
+The above exception was the direct cause of the following exception:
+
+robot = (<brain.Brain object at 0x7f972bd706e0>, <transport.SimTransport object at 0x7f972bd70680>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_auto_handover_does_not_ex0')
+
+    def test_auto_handover_does_not_expire_while_reporting_or_disabling_tof(robot, tmp_path):
+        async def run():
+            b, hw, a, _ = prepared(robot, tmp_path)
+            hw.state['joints'].update(targets_at(a.cfg['arm_path'], 2050))
+            cached_range(b, hw)
+            f = BoxToFFlow(a); f.last_obj = copy.deepcopy(a.target)
+            original_final = f.final_approach
+            moves = []
+            async def move(targets, *args, **kwargs):
+                moves.append(dict(targets)); hw.state['joints'].update(targets)
+                hw.state['sensors']['D19'] = 0 if hw.state['joints']['p1'] == 2310 else 1
+                b.last_hw = hw.request('STATUS'); b.updated = time.monotonic()
+            async def delayed_final():
+                f.tof_confirmed_at -= 30
+                hw.tof_at = time.monotonic() - 100
+                hw.state['tof']['valid'] = False  # The handoff was already confirmed.
+                b.last_hw = hw.request('STATUS'); b.updated = time.monotonic()
+                return await original_final()
+            a.move_targets = move; f.final_approach = delayed_final
+            with pytest.raises(CloseRangeContact):
+                await f.sensor_approach()
+            assert moves and moves[-1]['p1'] == 2310 and moves[-1]['p10'] == 650
+            assert f.stage == 'final_ir'
+>       asyncio.run(run())
+
+tests/test_vl53_auto_ready_v3162.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_vl53_auto_ready_v3162.py:69: in run
+    await f.sensor_approach()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <box_tof_flow.BoxToFFlow object at 0x7f972bd70170>, reason = 'handoff'
+
+    async def sensor_approach(self, reason='handoff'):
+        from auto_controller import NearHold, AutoFault
+        a, c = self.a, self.c
+        _, p1 = self.stationary_pose()
+        if (p1 > c['handoff_p1_us'] or not self.last_obj or a.selected_bin != a.locked_bin
+                or reason not in ('handoff', 'both_sides', 'forward_range')):
+            raise AutoFault('Chưa đủ khóa vật/tư thế để bàn giao VL53')
+        if reason == 'handoff' and p1 != c['handoff_p1_us']:
+            raise AutoFault('Chưa tới mốc bàn giao tay2050/727')
+        if reason == 'forward_range' and self.last_action != 'FORWARD':
+            raise AutoFault('Chưa có hành động tiến để bàn giao VL53 sớm')
+        margin = a.cfg['pose_profile']['side_margin_norm']
+        box = self.last_obj['bbox_norm']
+        if reason == 'both_sides' and not (box[0] <= margin and box[2] >= 1-margin):
+            raise AutoFault('Box chưa chạm cả hai mép để bàn giao VL53 sớm')
+        self.tof_pose = p1
+        a.vision_paused = True
+        a.observed_jpeg = None
+        a.clear_overlay()
+        self.stage = 'tof_approach'
+        why = {'handoff': 'Đạt2050/727', 'both_sides': 'Box chạm cả hai mép trái/phải',
+               'forward_range': 'VL53 đã tới ngưỡng khi đang tiến, kể cả mất box'}[reason]
+        await a.emit('auto_tof_handoff', why + ': dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53',
+                     phase=self.stage, s2_us=p1, p10_us=targets_at(self.path, p1)['p10'],
+                     tof_entry_reason=reason,
+                     vision_mode='tof_only', target_bbox=None, target_bbox_norm=None)
+        await self.set_tof_guard(True)
+        deadline = time.monotonic() + c['tof_approach_timeout_ms'] / 1000
+        last_seq = None
+        votes = pulses = 0
+        last_new = time.monotonic()
+        while time.monotonic() < deadline:
+            a.check_rear()
+            s, _ = self.stationary_pose(p1)
+            if a.sensor('D19'):
+                raise NearHold('D19 nhận khi đang tiếp cận VL53; chưa đúng tư thế gắp cuối')
+            try:
+                seq, mm = tof_sample(s, c)
+            except ValueError as exc:
+                votes = 0
+                await a.emit('auto_tof_retry', str(exc) + '; bánh giữ yên', phase=self.stage,
+                             tof_valid=False, tof_votes=0, tof_mm=None, tof_seq=None)
+                if time.monotonic()-last_new >= c['tof_fault_timeout_ms']/1000:
+>                   raise NearHold('VL53 lỗi/cũ quá lâu; giữ tay/bánh') from exc
+E                   auto_controller.NearHold: VL53 lỗi/cũ quá lâu; giữ tay/bánh
+
+python/box_tof_flow.py:448: NearHold
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_handoff · Đạt2050/727: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+___ test_auto_checks_ready_distance_before_waiting_for_another_camera_action ___
+
+robot = (<brain.Brain object at 0x7f972bd5eb70>, <transport.SimTransport object at 0x7f972bd5eb40>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_auto_checks_ready_distanc0')
+
+    def test_auto_checks_ready_distance_before_waiting_for_another_camera_action(robot, tmp_path):
+        async def run():
+            b, hw, a, _ = prepared(robot, tmp_path)
+            cached_range(b, hw)
+            a.detect = AsyncMock(return_value=copy.deepcopy(a.target))
+            a.prepare_bin = AsyncMock()
+            f = BoxToFFlow(a)
+            f.observe = AsyncMock(side_effect=AssertionError('Should hand off before another image'))
+            f.final_approach = AsyncMock(side_effect=CloseRangeContact(copy.deepcopy(a.target)))
+            with pytest.raises(CloseRangeContact):
+                await f.run()
+            assert f.tof_pose == 1300 and f.tof_confirmed
+            f.observe.assert_not_awaited()
+>       asyncio.run(run())
+
+tests/test_vl53_auto_ready_v3162.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_vl53_auto_ready_v3162.py:85: in run
+    await f.run()
+python/box_tof_flow.py:351: in run
+    obj = await self.observe()
+          ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AsyncMock id='140287252100016'>, args = (), kwargs = {}
+
+    async def _execute_mock_call(self, /, *args, **kwargs):
+        # This is nearly just like super(), except for special handling
+        # of coroutines
+    
+        _call = _Call((args, kwargs), two=True)
+        self.await_count += 1
+        self.await_args = _call
+        self.await_args_list.append(_call)
+    
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+>               raise effect
+E               AssertionError: Should hand off before another image
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py:2291: AssertionError
+_ test_cached_far_reading_recovers_when_range_arrives_after_old_fault_deadline _
+
+self = <box_tof_flow.BoxToFFlow object at 0x7f972bd5d640>, reason = 'handoff'
+
+    async def sensor_approach(self, reason='handoff'):
+        from auto_controller import NearHold, AutoFault
+        a, c = self.a, self.c
+        _, p1 = self.stationary_pose()
+        if (p1 > c['handoff_p1_us'] or not self.last_obj or a.selected_bin != a.locked_bin
+                or reason not in ('handoff', 'both_sides', 'forward_range')):
+            raise AutoFault('Chưa đủ khóa vật/tư thế để bàn giao VL53')
+        if reason == 'handoff' and p1 != c['handoff_p1_us']:
+            raise AutoFault('Chưa tới mốc bàn giao tay2050/727')
+        if reason == 'forward_range' and self.last_action != 'FORWARD':
+            raise AutoFault('Chưa có hành động tiến để bàn giao VL53 sớm')
+        margin = a.cfg['pose_profile']['side_margin_norm']
+        box = self.last_obj['bbox_norm']
+        if reason == 'both_sides' and not (box[0] <= margin and box[2] >= 1-margin):
+            raise AutoFault('Box chưa chạm cả hai mép để bàn giao VL53 sớm')
+        self.tof_pose = p1
+        a.vision_paused = True
+        a.observed_jpeg = None
+        a.clear_overlay()
+        self.stage = 'tof_approach'
+        why = {'handoff': 'Đạt2050/727', 'both_sides': 'Box chạm cả hai mép trái/phải',
+               'forward_range': 'VL53 đã tới ngưỡng khi đang tiến, kể cả mất box'}[reason]
+        await a.emit('auto_tof_handoff', why + ': dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53',
+                     phase=self.stage, s2_us=p1, p10_us=targets_at(self.path, p1)['p10'],
+                     tof_entry_reason=reason,
+                     vision_mode='tof_only', target_bbox=None, target_bbox_norm=None)
+        await self.set_tof_guard(True)
+        deadline = time.monotonic() + c['tof_approach_timeout_ms'] / 1000
+        last_seq = None
+        votes = pulses = 0
+        last_new = time.monotonic()
+        while time.monotonic() < deadline:
+            a.check_rear()
+            s, _ = self.stationary_pose(p1)
+            if a.sensor('D19'):
+                raise NearHold('D19 nhận khi đang tiếp cận VL53; chưa đúng tư thế gắp cuối')
+            try:
+>               seq, mm = tof_sample(s, c)
+                          ^^^^^^^^^^^^^^^^
+
+python/box_tof_flow.py:442: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+snapshot = {'connected': True, 'fresh': True, 'simulation': True, 'stopped': False, ...}
+cfg = {'enabled': True, 'require_visible_target': False, 'handoff_p1_us': 2050, 'handoff_p10_us': 727, ...}
+
+    def tof_sample(snapshot, cfg):
+        hw = snapshot.get('hardware', {})
+        t = hw.get('tof', {})
+        if hw.get('tof_protocol') != 1 or t.get('present') is not True:
+            raise ValueError('Chưa có firmware/VL53L1X')
+        age, status_age = t.get('age_ms'), snapshot.get('age_ms')
+        if (type(age) is not int or age < 0 or type(status_age) not in (int, float)
+                or status_age < 0 or age + status_age > cfg['tof_max_age_ms']):
+>           raise ValueError('Mẫu VL53 quá cũ/chưa có mẫu mới')
+E           ValueError: Mẫu VL53 quá cũ/chưa có mẫu mới
+
+python/box_tof_flow.py:114: ValueError
+
+The above exception was the direct cause of the following exception:
+
+robot = (<brain.Brain object at 0x7f972bd5dd30>, <transport.SimTransport object at 0x7f972bd5dd60>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_cached_far_reading_recove0')
+
+    def test_cached_far_reading_recovers_when_range_arrives_after_old_fault_deadline(robot, tmp_path):
+        async def run():
+            b, hw, a, _ = prepared(robot, tmp_path)
+            hw.state['joints'].update(targets_at(a.cfg['arm_path'], 2050))
+            cached_range(b, hw, mm=800)
+            f = BoxToFFlow(a); f.last_obj = copy.deepcopy(a.target)
+            f.final_approach = AsyncMock(return_value='grasp')
+            async def range_arrives():
+                await asyncio.sleep(1.2)  # Fixture's previous fault deadline is 1 second.
+                cached_range(b, hw, mm=280)
+            later = asyncio.create_task(range_arrives())
+            try:
+                assert await asyncio.wait_for(f.sensor_approach(), 4) == 'grasp'
+                assert f.tof_confirmed
+            finally:
+                later.cancel(); await asyncio.gather(later, return_exceptions=True)
+>       asyncio.run(run())
+
+tests/test_vl53_auto_ready_v3162.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_vl53_auto_ready_v3162.py:103: in run
+    assert await asyncio.wait_for(f.sensor_approach(), 4) == 'grasp'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/tasks.py:520: in wait_for
+    return await fut
+           ^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <box_tof_flow.BoxToFFlow object at 0x7f972bd5d640>, reason = 'handoff'
+
+    async def sensor_approach(self, reason='handoff'):
+        from auto_controller import NearHold, AutoFault
+        a, c = self.a, self.c
+        _, p1 = self.stationary_pose()
+        if (p1 > c['handoff_p1_us'] or not self.last_obj or a.selected_bin != a.locked_bin
+                or reason not in ('handoff', 'both_sides', 'forward_range')):
+            raise AutoFault('Chưa đủ khóa vật/tư thế để bàn giao VL53')
+        if reason == 'handoff' and p1 != c['handoff_p1_us']:
+            raise AutoFault('Chưa tới mốc bàn giao tay2050/727')
+        if reason == 'forward_range' and self.last_action != 'FORWARD':
+            raise AutoFault('Chưa có hành động tiến để bàn giao VL53 sớm')
+        margin = a.cfg['pose_profile']['side_margin_norm']
+        box = self.last_obj['bbox_norm']
+        if reason == 'both_sides' and not (box[0] <= margin and box[2] >= 1-margin):
+            raise AutoFault('Box chưa chạm cả hai mép để bàn giao VL53 sớm')
+        self.tof_pose = p1
+        a.vision_paused = True
+        a.observed_jpeg = None
+        a.clear_overlay()
+        self.stage = 'tof_approach'
+        why = {'handoff': 'Đạt2050/727', 'both_sides': 'Box chạm cả hai mép trái/phải',
+               'forward_range': 'VL53 đã tới ngưỡng khi đang tiến, kể cả mất box'}[reason]
+        await a.emit('auto_tof_handoff', why + ': dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53',
+                     phase=self.stage, s2_us=p1, p10_us=targets_at(self.path, p1)['p10'],
+                     tof_entry_reason=reason,
+                     vision_mode='tof_only', target_bbox=None, target_bbox_norm=None)
+        await self.set_tof_guard(True)
+        deadline = time.monotonic() + c['tof_approach_timeout_ms'] / 1000
+        last_seq = None
+        votes = pulses = 0
+        last_new = time.monotonic()
+        while time.monotonic() < deadline:
+            a.check_rear()
+            s, _ = self.stationary_pose(p1)
+            if a.sensor('D19'):
+                raise NearHold('D19 nhận khi đang tiếp cận VL53; chưa đúng tư thế gắp cuối')
+            try:
+                seq, mm = tof_sample(s, c)
+            except ValueError as exc:
+                votes = 0
+                await a.emit('auto_tof_retry', str(exc) + '; bánh giữ yên', phase=self.stage,
+                             tof_valid=False, tof_votes=0, tof_mm=None, tof_seq=None)
+                if time.monotonic()-last_new >= c['tof_fault_timeout_ms']/1000:
+>                   raise NearHold('VL53 lỗi/cũ quá lâu; giữ tay/bánh') from exc
+E                   auto_controller.NearHold: VL53 lỗi/cũ quá lâu; giữ tay/bánh
+
+python/box_tof_flow.py:448: NearHold
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_handoff · Đạt2050/727: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+_______ test_stop_after_distance_confirmation_still_prevents_arm_motion ________
+
+robot = (<brain.Brain object at 0x7f972bce8b90>, <transport.SimTransport object at 0x7f972bce8dd0>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_stop_after_distance_confi0')
+
+    def test_stop_after_distance_confirmation_still_prevents_arm_motion(robot, tmp_path):
+        async def run():
+            b, hw, a, _ = prepared(robot, tmp_path)
+            hw.state['joints'].update(targets_at(a.cfg['arm_path'], 2050))
+            cached_range(b, hw)
+            f = BoxToFFlow(a); f.last_obj = copy.deepcopy(a.target)
+            original_final = f.final_approach
+            async def stop_before_final():
+                b.stop()
+                return await original_final()
+            f.final_approach = stop_before_final
+            with pytest.raises(AutoFault):
+                await f.sensor_approach()
+            stop = max(i for i, c in enumerate(hw.commands) if c == 'STOP')
+            assert not any(c.startswith(('P ', 'S ', 'G ')) for c in hw.commands[stop + 1:])
+            assert b.stopped
+>       asyncio.run(run())
+
+tests/test_vl53_auto_ready_v3162.py:126: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        b, hw, a, _ = prepared(robot, tmp_path)
+        hw.state['joints'].update(targets_at(a.cfg['arm_path'], 2050))
+        cached_range(b, hw)
+        f = BoxToFFlow(a); f.last_obj = copy.deepcopy(a.target)
+        original_final = f.final_approach
+        async def stop_before_final():
+            b.stop()
+            return await original_final()
+        f.final_approach = stop_before_final
+        with pytest.raises(AutoFault):
+            await f.sensor_approach()
+        stop = max(i for i, c in enumerate(hw.commands) if c == 'STOP')
+>       assert not any(c.startswith(('P ', 'S ', 'G ')) for c in hw.commands[stop + 1:])
+E       assert not True
+E        +  where True = any(<generator object test_stop_after_distance_confirmation_still_prevents_arm_motion.<locals>.run.<locals>.<genexpr> at 0x7f972b6f0ba0>)
+
+tests/test_vl53_auto_ready_v3162.py:124: AssertionError
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_handoff · Đạt2050/727: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+AUTO · auto_tof_retry · Mẫu VL53 quá cũ/chưa có mẫu mới; bánh giữ yên · Vật khóa: can · BIN 4
+=========================== short test summary info ============================
+FAILED tests/test_vl53_auto_ready_v3162.py::test_auto_range_ignores_age_but_default_manual_reader_stays_strict[300]
+FAILED tests/test_vl53_auto_ready_v3162.py::test_auto_range_ignores_age_but_default_manual_reader_stays_strict[5000]
+FAILED tests/test_vl53_auto_ready_v3162.py::test_auto_range_ignores_age_but_default_manual_reader_stays_strict[None]
+FAILED tests/test_vl53_auto_ready_v3162.py::test_auto_accepts_one_in_range_sample_without_new_sequence_or_window_streak
+FAILED tests/test_vl53_auto_ready_v3162.py::test_auto_handover_does_not_expire_while_reporting_or_disabling_tof
+FAILED tests/test_vl53_auto_ready_v3162.py::test_auto_checks_ready_distance_before_waiting_for_another_camera_action
+FAILED tests/test_vl53_auto_ready_v3162.py::test_cached_far_reading_recovers_when_range_arrives_after_old_fault_deadline
+FAILED tests/test_vl53_auto_ready_v3162.py::test_stop_after_distance_confirmation_still_prevents_arm_motion
+8 failed in 14.48s

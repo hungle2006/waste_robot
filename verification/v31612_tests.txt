@@ -1,0 +1,96 @@
+.......F................................................................ [ 88%]
+.........                                                                [100%]
+=================================== FAILURES ===================================
+___________________ test_descent_retains_stop_and_d18[rear] ____________________
+
+robot = (<brain.Brain object at 0x7f85f2b18620>, <transport.SimTransport object at 0x7f85f2b185f0>)
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-11/test_descent_retains_stop_and_1')
+interruption = 'rear'
+
+    @pytest.mark.parametrize('interruption',['stop','rear'])
+    def test_descent_retains_stop_and_d18(robot,tmp_path,interruption):
+        async def run():
+            b,hw,a,f,moves,checks=setup_flow(robot,tmp_path,ir=True)
+            move=a.move_targets
+            async def interrupt(targets,*args,**kwargs):
+                await move(targets,*args,**kwargs)
+                if interruption=='stop':b.stop()
+                else:
+                    hw.state['sensors']['D18']=0;b.rear_pending=True
+            a.move_targets=interrupt
+            with pytest.raises(AutoFault if interruption=='stop' else RearRequested):
+                await f.sensor_approach()
+            assert len(moves)==1 and not checks
+            assert not any(c.startswith('G ') for c in hw.commands)
+>       asyncio.run(run())
+
+tests/test_ir_after_lower_v31612.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_ir_after_lower_v31612.py:103: in run
+    await f.sensor_approach()
+python/box_tof_flow.py:494: in sensor_approach
+    return await self.final_approach()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <box_tof_flow.BoxToFFlow object at 0x7f85f2a4ce00>
+
+    async def final_approach(self):
+        from auto_controller import AutoFault, NearHold, CloseRangeContact
+        a, c = self.a, self.c
+        if (not self.tof_confirmed or self.tof_pose is None or self.stage != 'tof_approach' or not a.vision_paused
+                or not self.last_obj or a.selected_bin != a.locked_bin or a.final_authorized is not None):
+            raise AutoFault('Chưa đủ khóa vật/BIN để chuyển tư thế gắp')
+        a.guard()
+        if self.tof_confirmed_at is None:
+            raise AutoFault('Chưa có xác nhận khoảng cách của lượt gắp này')
+        a.final_authorized = {'target_id': a.lock_sequence, 'bin': a.locked_bin, 'mode': 'box_tof'}
+        self.stage = 'final_ir'
+        await a.emit('auto_tof_final_pose', 'Đủ khoảng cách; hạ hết tay tới2310/650 rồi mới kiểm tra IR D19',
+                     phase=self.stage, vision_mode='ir_only', ir_check_enabled=False)
+        _, p1 = self.stationary_pose(self.tof_pose)
+        for pulse in pulse_steps(p1, self.path['end']['p1'], c['step_us']):
+            await a.fresh_hardware()
+            a.check_rear()
+            # D19 is evaluated only after every final-pose step has completed.
+            # STOP, cancellation, D18 and connection checks still apply per step.
+            await a.move_targets(targets_at(self.path, pulse), 'AUTO về tư thế gắp VL53', gentle=True)
+        await a.fresh_hardware()
+        self.stationary_pose(self.path['end']['p1'])
+        await a.emit('auto_tof_ir_wait', 'Đã xuống hết vị trí gắp; kiểm tra IR D19, chưa nhận thì nhích160ms',
+                     phase=self.stage, ir_check_enabled=True)
+        deadline = time.monotonic() + c['final_timeout_ms']/1000
+        since = None
+        pulses = 0
+        while time.monotonic() < deadline:
+            a.check_rear()
+            await a.fresh_hardware()
+            self.stationary_pose(self.path['end']['p1'])
+            if a.sensor('D19'):
+                if since is None:
+                    since = time.monotonic()
+                if time.monotonic()-since >= c['ir_confirm_ms']/1000:
+                    await a.emit('auto_tof_ir_ready', 'D19 ổn định tại2310/650; cho phép đóng kẹp', phase=self.stage)
+>                   raise CloseRangeContact(copy.deepcopy(self.last_obj))
+E                   auto_controller.CloseRangeContact: Đã xác nhận IR ở giai đoạn tiếp cận gần
+
+python/box_tof_flow.py:542: CloseRangeContact
+----------------------------- Captured stdout call -----------------------------
+AUTO · auto_tof_handoff · Đạt2050/727: dừng nhận diện; giữ tay hiện tại, tiếp cận bằng VL53 · Vật khóa: can · BIN 4
+AUTO · auto_tof_observe · VL53=22.5cm · đủ khoảng cách gắp · Vật khóa: can · BIN 4
+AUTO · auto_distance_ready · Đã đạt khoảng cách 20–25 cm; chuẩn bị S1 → S2 → xoay → kẹp → nâng · Vật khóa: can · BIN 4
+AUTO · auto_tof_final_pose · Đủ khoảng cách; hạ hết tay tới2310/650 rồi mới kiểm tra IR D19 · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_wait · Đã xuống hết vị trí gắp; kiểm tra IR D19, chưa nhận thì nhích160ms · Vật khóa: can · BIN 4
+AUTO · auto_tof_ir_ready · D19 ổn định tại2310/650; cho phép đóng kẹp · Vật khóa: can · BIN 4
+=========================== short test summary info ============================
+FAILED tests/test_ir_after_lower_v31612.py::test_descent_retains_stop_and_d18[rear]
+1 failed, 80 passed in 92.61s (0:01:32)

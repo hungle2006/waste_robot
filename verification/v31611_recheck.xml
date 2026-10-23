@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="16" time="33.665" timestamp="2026-10-21T09:55:35.318465-05:00" hostname="dd67e7c6c248"><testcase classname="tests.test_distance_window_v31611" name="test_all_config_sources_agree" time="0.014" /><testcase classname="tests.test_distance_window_v31611" name="test_inclusive_window_authorizes_grasp[200]" time="0.191" /><testcase classname="tests.test_distance_window_v31611" name="test_inclusive_window_authorizes_grasp[225]" time="0.163" /><testcase classname="tests.test_distance_window_v31611" name="test_inclusive_window_authorizes_grasp[250]" time="0.212" /><testcase classname="tests.test_distance_window_v31611" name="test_outside_window_never_authorizes_grasp[199]" time="0.223" /><testcase classname="tests.test_distance_window_v31611" name="test_outside_window_never_authorizes_grasp[251]" time="0.158" /><testcase classname="tests.test_box_tof_flow" name="test_camera_guides_show_new_flow_and_leave_raw_frame_clean" time="0.293" /><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[1300-both_sides-200]" time="0.185" /><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[1550-both_sides-250]" time="0.235" /><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[1800-forward_range-225]" time="0.236" /><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[2000-forward_range-225]" time="0.184" /><testcase classname="tests.test_box_tof_recovery" name="test_range_confirmation_can_start_at_current_stored_pose[2050-handoff-225]" time="0.154" /><testcase classname="tests.test_box_tof_recovery" name="test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision[both]" time="15.352" /><testcase classname="tests.test_box_tof_recovery" name="test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision[missing]" time="15.234"><failure message="assert 6 == 3&#10; +  where 6 = &lt;test_box_tof_recovery.RecoveryVision object at 0x7f72c80ee630&gt;.missing">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-9/test_early_full_cycle_reaches_1')
+kind = 'missing'
+
+    @pytest.mark.parametrize('kind',['both','missing'])
+    def test_early_full_cycle_reaches_grip_and_frozen_bin_without_more_vision(tmp_path,kind):
+        async def run():
+            r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+            c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+            p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+            hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+            wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+            v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+            try:
+                await a.start();await finish(a,timeout=50)
+                assert a.state['state']=='auto_done' and hw.released,a.state
+                events=[call.args[0] for call in a.report.call_args_list]
+                entry=[e for e in events if e['state']=='auto_tof_handoff']
+                assert len(entry)==1 and entry[0]['s2_us']==1300
+                assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+                assert hw.early_pulses==3 and hw.ir_pulses==2
+                assert 'P 1 2310' in hw.commands and 'P 10 650' in hw.commands
+                assert all(e['bin']==4 for e in events if e['state']=='auto_grip')
+                if kind=='missing':
+                    assert v.missing==3
+                    assert 'G 100 0 0 20 160 240' in hw.commands
+                    assert 'G 100 0 0 20 80 0' in hw.commands
+                else:assert not any(s=='G 100 0 0 20 160 240' for s in hw.commands)
+                assert all(s.split()[1:4]==['100','0','0'] for s in hw.commands if s.startswith('G '))
+            finally:
+                if a.running:await a.stop()
+                b.close()
+&gt;       asyncio.run(run())
+
+tests/test_box_tof_recovery.py:264: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:195: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        r=read_config(PARAMS,'robot');r.update(step_us=100,step_ms=20,settle_ms=0)
+        c=config();p=tmp_path/'robot.json';q=tmp_path/'auto.json'
+        p.write_text(json.dumps(r));q.write_text(json.dumps(c))
+        hw=RecoveryTransport(r['grip']);b=Brain(hw,p,True);b.connect();b.start_monitor()
+        wait_for(lambda:b.snapshot()['fresh'] and not b.busy)
+        v=RecoveryVision(hw,kind);a=AutoController(b,v,q,AsyncMock())
+        try:
+            await a.start();await finish(a,timeout=50)
+            assert a.state['state']=='auto_done' and hw.released,a.state
+            events=[call.args[0] for call in a.report.call_args_list]
+            entry=[e for e in events if e['state']=='auto_tof_handoff']
+            assert len(entry)==1 and entry[0]['s2_us']==1300
+            assert entry[0]['tof_entry_reason']==('both_sides' if kind=='both' else 'forward_range')
+            assert hw.early_pulses==3 and hw.ir_pulses==2
+            assert 'P 1 2310' in hw.commands and 'P 10 650' in hw.commands
+            assert all(e['bin']==4 for e in events if e['state']=='auto_grip')
+            if kind=='missing':
+&gt;               assert v.missing==3
+E               assert 6 == 3
+E                +  where 6 = &lt;test_box_tof_recovery.RecoveryVision object at 0x7f72c80ee630&gt;.missing
+
+tests/test_box_tof_recovery.py:256: AssertionError</failure></testcase><testcase classname="tests.test_gift_d4_v3169" name="test_gift_d4_and_lid_p4_are_independent" time="0.459" /><testcase classname="tests.test_gift_d4_v3169" name="test_old_d22_firmware_protocol_cannot_enable_d4" time="0.004" /></testsuite></testsuites>

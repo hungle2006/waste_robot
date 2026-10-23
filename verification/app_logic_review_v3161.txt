@@ -1,0 +1,15 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> waste-robot-control@1.0.0 test
+> vitest run --reporter=dot
+
+
+ RUN  v3.2.4 /workspace/scratch/afcbd1fb0e25/waste-app-src
+
+··················
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  10:59:06
+   Duration  8.71s (transform 177ms, setup 0ms, collect 405ms, tests 7.43s, environment 419ms, prepare 143ms)
+

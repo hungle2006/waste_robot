@@ -1,0 +1,29 @@
+{
+  "version": "3.16.2",
+  "checked_at": "2026-10-19T21:32:23.495814+07:00",
+  "base_zip_sha256": "ab4bfcfd6ca3a20637fbb1e6ccf951ffe7165d0235a8539b12b0429ddf52ad8b",
+  "auto_tof_age_gate": false,
+  "auto_range_confirmation_samples": 1,
+  "auto_range_mm": [
+    250,
+    300
+  ],
+  "auto_range_confirmation_expires": false,
+  "manual_freshness_unchanged": true,
+  "firmware_wheel_interlock_unchanged": true,
+  "d19_before_grip": true,
+  "new_final_tests_passed": 10,
+  "broad_run": {
+    "passed": 86,
+    "failed": 1,
+    "fixture_failure_corrected_and_passed_in_final_group": true
+  },
+  "manual_stop_tests_passed": 35,
+  "distinct_related_tests_verified": 122,
+  "python_source_syntax_files": 31,
+  "check_system": "passed",
+  "firmware_identical_files": 81,
+  "environment_identical_files": 1,
+  "real_hardware_tested": false,
+  "frontend_changed": false
+}

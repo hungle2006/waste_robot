@@ -1,0 +1,30 @@
+{
+  "checked_at": "2026-10-19T15:47:24.541998+07:00",
+  "project": "waste-app",
+  "project_id": "prj_JbfOyJt8bBQJcFmK4DLa2sfhGGPN",
+  "branch": "main",
+  "commit": "1d235f5b4cf526e1e24f81333d6029e89b780e3c",
+  "deployment_id": "dpl_4XL8hkNwyBz2zVDzXv4bBa51uyMX",
+  "state": "READY",
+  "target": "production",
+  "alias": "https://waste-app-control.vercel.app/",
+  "build_duration_seconds": 27.878,
+  "ui_verified": [
+    "Manual/Auto view",
+    "Cánh tay",
+    "Bánh xe",
+    "Thùng & nắp",
+    "Auto & lệnh",
+    "Camera region remains visible",
+    "Offline mechanics controls disabled"
+  ],
+  "robot_connected_during_check": false,
+  "camera_stream_verified": false,
+  "real_hardware_motion_tested": false,
+  "runtime_error_fatal_log_window_utc": [
+    "2026-10-19T08:36:01.794Z",
+    "2026-10-19T08:46:01.794Z"
+  ],
+  "runtime_error_fatal_logs_returned": 0,
+  "code_changed_this_continuation": false
+}
