@@ -1,0 +1,7 @@
+pytest>=8,<10
+pytest-xdist>=3,<4
+httpx[socks]==0.28.1
+fastapi==0.143.0
+numpy>=1.26
+Pillow==12.3.0
+opencv-python>=4.10,<5

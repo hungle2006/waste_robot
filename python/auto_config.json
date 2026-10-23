@@ -1,0 +1,164 @@
+{
+  "version": 3,
+  "calibration": {
+    "mode": "relative",
+    "relative_target_norm": [
+      0.5,
+      0.5
+    ],
+    "relative_tolerance_norm": [
+      0.03,
+      0.08
+    ],
+    "frame_size": [
+      640,
+      480
+    ],
+    "frozen_joints_us": {
+      "p10": 950,
+      "p11": 1250,
+      "d2": 2100
+    },
+    "positive_error_x_move": "RIGHT",
+    "positive_error_y_move": "BACK",
+    "stages": [],
+    "grasp_final_s2_us": 2900,
+    "contact_sensor": "D19",
+    "hold_sensor": "D19",
+    "sensor_note": "IR ở digital 19 Mega; cảm biến thùng rác ở D18, độc lập với IR gắp. Một IR D19 kiểm tra hiện diện trước/sau nâng, không đo lực kẹp. PCA9685 không có đầu vào cảm biến.",
+    "point_mode": "relative",
+    "default_tolerance_norm": [
+      0.025,
+      0.035
+    ],
+    "direction_trials": {},
+    "active_level": 0,
+    "grasp_hold_confirm_ms": 300
+  },
+  "control": {
+    "speed": 20,
+    "move_ms": 120,
+    "s2_step_us": 50,
+    "settle_ms": 500,
+    "stable_samples": 2,
+    "max_align_moves_per_stage": 25,
+    "max_target_jump_normalized": 0.2,
+    "inference_timeout_s": 180,
+    "max_result_age_s": 20,
+    "max_cycle_s": 1200,
+    "relative_min_response_norm": 0.01,
+    "relative_max_no_response": 3,
+    "no_target_retry_ms": 2000,
+    "max_no_target_attempts": 20,
+    "repeat": false,
+    "max_cycles": 10
+  },
+  "measurements_reference_only": {
+    "search_s1_s2_deg": 195,
+    "search_pulses_us": {
+      "p1": 1300,
+      "p10": 950,
+      "p11": 1250,
+      "d2": 2100,
+      "d3": 600
+    },
+    "approach_s1_s2_deg": 90,
+    "s2_pivot_height_cm": 42,
+    "camera_along_arm_cm": 22,
+    "camera_normal_offset_cm": 7,
+    "camera_to_gripper_cm": 9,
+    "search_camera_height_cm": 64,
+    "search_lens_to_paper_cm_range": [
+      92,
+      93
+    ],
+    "camera_angle_reported_deg": 60,
+    "camera_angle_reference": "CHUA_XAC_DINH",
+    "s2_angle_mapping": "SEARCH_1300_US_195_DEG_LOWER_REFERENCE_2900_US_90_DEG_CHUA_CO_NOI_SUY_GOC",
+    "metric_distance_enabled": false
+  },
+  "rear": {
+    "enabled_in_auto": true,
+    "sensor": "D18",
+    "active_level": 0,
+    "settle_ms": 700,
+    "stable_samples": 2,
+    "max_detection_attempts": 4,
+    "retry_ms": 1000,
+    "min_open_ms": 1500,
+    "clear_confirm_ms": 500,
+    "max_open_ms": 12000,
+    "max_cycle_s": 240
+  },
+  "near": {
+    "enabled": true,
+    "stop_rw": 0.6,
+    "edge_margin_norm": 0.01,
+    "max_alignment_age_s": 30,
+    "wait_contact_ms": 2000,
+    "contact_confirm_ms": 300
+  },
+  "approach": {
+    "enabled": true,
+    "target_x_norm": 0.5,
+    "x_tolerance_norm": 0.03,
+    "stop_bottom_norm": 0.6,
+    "stop_rw": 0.4,
+    "stop_rh": 0.7,
+    "forward_ms": 120,
+    "lateral_ms": 100,
+    "max_forward_steps": 40,
+    "max_lateral_steps": 25,
+    "max_no_progress": 5,
+    "min_progress_norm": 0.003,
+    "arm_x_tolerance_norm": 0.06
+  },
+  "tracking": {
+    "allow_label_variation": true,
+    "min_iou": 0.3,
+    "max_label_shift_norm": 0.08
+  },
+  "target_lock": {
+    "enabled": true,
+    "min_iou": 0.15,
+    "max_shift_norm": 0.22,
+    "min_area_ratio": 0.35,
+    "max_area_ratio": 3.0,
+    "ambiguity_margin": 0.12,
+    "appearance_similarity": 0.7,
+    "confirm_frames": 2,
+    "classify_frames": 1,
+    "retry_ms": 500,
+    "reference_max_age_s": 30,
+    "overlay_max_age_s": 2.0,
+    "continuous_auto": true
+  },
+  "motion": {
+    "enabled": true,
+    "ramp_ms": 160,
+    "arm_step_us": 50,
+    "arm_step_ms": 50
+  },
+  "visibility": {
+    "enabled": true,
+    "trigger_bottom_norm": 0.54,
+    "blur_bottom_norm": 0.6,
+    "min_bottom_norm": 0.15,
+    "min_top_norm": 0.03,
+    "near_forward_ms": 60,
+    "near_margin_norm": 0.06,
+    "min_step_us": 50,
+    "prediction_margin_norm": 0.01,
+    "response_noise_norm": 0.015,
+    "min_response_norm": 0.002,
+    "max_no_response": 4
+  },
+  "distance": {
+    "enabled": true,
+    "stop_forward_cm": null,
+    "tolerance_cm": 3.0,
+    "slow_zone_cm": 10.0,
+    "max_error_cm": 2.0,
+    "calibration": null
+  }
+}

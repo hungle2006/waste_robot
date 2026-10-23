@@ -1,0 +1,10 @@
+# Jetson Nano JetPack 4: Python 3.10 (Miniforge, ARM64, glibc >= 2.17)
+# numpy, opencv and pillow are installed from conda-forge, NOT opencv-python from pip.
+# LiveKit rtc is omitted: recent prebuilt aarch64 wheels need glibc >=2.28
+# while Nano/JetPack4 Ubuntu18.04 ships glibc2.27.
+supabase==2.32.0
+httpx[socks]==0.28.1
+fastapi==0.143.0
+uvicorn==0.54.0
+pyserial==3.5
+python-dotenv==1.2.4
