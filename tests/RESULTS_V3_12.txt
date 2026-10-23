@@ -1,0 +1,15 @@
+........................................................................ [ 25%]
+........................................................................ [ 51%]
+........................................................................ [ 76%]
+..................................................................       [100%]
+=============================== warnings summary ===============================
+tests/test_approach.py::test_approach_ui_save_does_not_move_hardware
+  /workspace/scratch/ec87ecb081dd/test_dependencies/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+282 passed, 1 warning in 442.85s (0:07:22)
+
+D18 bổ sung sau lần hồi quy:
+.                                                                        [100%]
+1 passed in 4.09s

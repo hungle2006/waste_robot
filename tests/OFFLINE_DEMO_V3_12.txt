@@ -1,0 +1,130 @@
+MÔ PHỎNG OFFLINE: dùng mốc xung thật, ảnh và IR được tạo giả lập.
+AUTO · auto_search · Đưa tay về SEARCH; chỉ căn bánh khi tay đứng yên
+AUTO · auto_reacquire · Đang xác nhận phân loại ban đầu · AUTO vẫn bật, bánh/tay đứng yên
+AUTO · auto_reacquire · Đang xác nhận phân loại ban đầu · AUTO vẫn bật, bánh/tay đứng yên
+AUTO · auto_reacquire · Đã thấy vật; xác nhận thêm ảnh trước khi tiếp tục · AUTO vẫn bật, bánh/tay đứng yên
+AUTO · auto_target_locked · Đã xác nhận vật đã khóa; tiếp tục AUTO
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_sort · Phân loại BIN 1; đóng nắp rồi xoay đúng ngăn
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1300/P10=950 · tham chiếu ống kính 75.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1300/P10=950 · tham chiếu ống kính 75.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1350 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1350/P10=935 · tham chiếu ống kính 69.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1350/P10=935 · tham chiếu ống kính 69.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1400 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1400/P10=920 · tham chiếu ống kính 63.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1400/P10=920 · tham chiếu ống kính 63.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1450 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1450/P10=906 · tham chiếu ống kính 57.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1450/P10=906 · tham chiếu ống kính 57.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1500 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1500/P10=891 · tham chiếu ống kính 51.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 1 · P1=1500/P10=891 · tham chiếu ống kính 51.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1550 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1550/P10=876 · tham chiếu ống kính 45.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1550/P10=876 · tham chiếu ống kính 45.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1600 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1600/P10=861 · tham chiếu ống kính 40.8 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1600/P10=861 · tham chiếu ống kính 40.8 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1650 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1650/P10=846 · tham chiếu ống kính 36.6 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1650/P10=846 · tham chiếu ống kính 36.6 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1700 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1700/P10=831 · tham chiếu ống kính 32.4 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1700/P10=831 · tham chiếu ống kính 32.4 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1750 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1750/P10=816 · tham chiếu ống kính 28.2 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 2 · P1=1750/P10=816 · tham chiếu ống kính 28.2 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1800 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1800/P10=801 · tham chiếu ống kính 24.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1800/P10=801 · tham chiếu ống kính 24.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1850 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1850/P10=786 · tham chiếu ống kính 21.6 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1850/P10=786 · tham chiếu ống kính 21.6 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1900 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1900/P10=771 · tham chiếu ống kính 19.2 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1900/P10=771 · tham chiếu ống kính 19.2 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 1950 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1950/P10=757 · tham chiếu ống kính 16.8 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=1950/P10=757 · tham chiếu ống kính 16.8 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 2000 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=2000/P10=742 · tham chiếu ống kính 14.4 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 3 · P1=2000/P10=742 · tham chiếu ống kính 14.4 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 2050 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2050/P10=727 · tham chiếu ống kính 12.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2050/P10=727 · tham chiếu ống kính 12.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 2100 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2100/P10=712 · tham chiếu ống kính 10.7 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2100/P10=712 · tham chiếu ống kính 10.7 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 2150 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2150/P10=697 · tham chiếu ống kính 9.3 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2150/P10=697 · tham chiếu ống kính 9.3 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 2200 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2200/P10=683 · tham chiếu ống kính 8.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2200/P10=683 · tham chiếu ống kính 8.0 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 2250 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2250/P10=668 · tham chiếu ống kính 6.6 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2250/P10=668 · tham chiếu ống kính 6.6 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 2300 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2300/P10=653 · tham chiếu ống kính 5.3 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 4 · P1=2300/P10=653 · tham chiếu ống kính 5.3 cm
+AUTO · auto_pose_lower · Hạ P1/P10 tới 2310 µs; lấy ảnh mới sau khi tay dừng
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 5 · P1=2310/P10=650 · tham chiếu ống kính 5.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_pose_observe · Mốc ảnh 5 · P1=2310/P10=650 · tham chiếu ống kính 5.0 cm
+AUTO · auto_target_observe · LOCK #1 · 1 box · BIN đã chốt 1
+AUTO · auto_grasp_pose_confirmed · Đúng cặp xung gắp đã đo ở mốc 27 cm; ảnh gần ổn định, chờ D19. Không suy ra khoảng cách chai hiện tại
+AUTO · auto_near_wait · Ảnh gần tại tư thế gắp đã xác nhận; giữ nguyên, chờ IR D19 · rw=0.62; giữ tay/bánh, chờ IR
+AUTO · auto_near_contact · Đã căn trước đó và IR xác nhận ổn định; chuyển sang gắp
+AUTO · auto_grip · Vật đã căn đúng và IR phát hiện; đóng kẹp
+AUTO · auto_lift · Nâng S2 về SEARCH, giữ kẹp đóng
+AUTO · auto_place · IR D19 vẫn thấy vật sau nâng · đưa vật tới BIN 1 đã xoay
+AUTO · auto_open_lid · Đã gắp/nâng/đưa vật tới vị trí thả; mở nắp
+AUTO · auto_release · Thả vật vào BIN 1
+AUTO · auto_cycle_done · Hoàn tất một lượt theo phản hồi hiện diện IR
+AUTO · auto_done · AUTO hoàn tất; bánh đã dừng
+KẾT QUẢ: auto_done; chu trình=1; thả mô phỏng=True
+Chưa xác nhận độ chính xác cơ khí/camera của robot thật.
