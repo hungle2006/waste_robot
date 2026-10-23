@@ -1,0 +1,1 @@
+Ảnh tải lên trong lịch sử, giữ để đối chiếu ngoại hình/cách đặt và giao diện cũ. Không có phép đăng ký pixel của các ảnh này sang camera USB. Không dùng ảnh chụp ngoài robot hay ảnh giao diện để suy góc khớp hoặc quy đổi pixel USB. Các tài liệu trước V3.12 chỉ để truy vết; xem README_CHAY_TRUOC.md cho hướng dẫn hiện tại.

@@ -1,0 +1,258 @@
+{
+  "version": "3.12",
+  "distance_definition": "camera_lens_to_bottle",
+  "s2_floor_reference_cm": 27.0,
+  "grasp_lens_reference_cm": 5.0,
+  "mechanical_angles_identified": false,
+  "camera_intrinsic_K_identified": false,
+  "independent_calibration_validation": false,
+  "usb_frame_size": [
+    1920,
+    1080
+  ],
+  "usb_manual_samples": [
+    {
+      "image_no": 1,
+      "file": "WIN_20261016_00_50_07_Pro.jpg",
+      "p1": 1300,
+      "p10": 950,
+      "lens_cm": 60.0,
+      "bbox_px": [
+        942,
+        540,
+        1052,
+        751
+      ],
+      "quality": "lower_occluded"
+    },
+    {
+      "image_no": 2,
+      "file": "WIN_20261016_00_50_48_Pro.jpg",
+      "p1": 1300,
+      "p10": 950,
+      "lens_cm": 75.0,
+      "bbox_px": [
+        947,
+        402,
+        1046,
+        621
+      ],
+      "quality": "full_manual"
+    },
+    {
+      "image_no": 3,
+      "file": "WIN_20261016_00_52_00_Pro.jpg",
+      "p1": 1300,
+      "p10": 950,
+      "lens_cm": 90.0,
+      "bbox_px": [
+        974,
+        285,
+        1055,
+        448
+      ],
+      "quality": "full_manual"
+    },
+    {
+      "image_no": 4,
+      "file": "WIN_20261016_00_55_48_Pro.jpg",
+      "p1": 1550,
+      "p10": 876,
+      "lens_cm": 45.0,
+      "bbox_px": [
+        918,
+        28,
+        1075,
+        454
+      ],
+      "quality": "full_manual_near_top"
+    },
+    {
+      "image_no": 7,
+      "file": "WIN_20261016_01_19_13_Pro.jpg",
+      "p1": 1800,
+      "p10": 801,
+      "lens_cm": 24.0,
+      "bbox_px": [
+        947,
+        28,
+        1202,
+        790
+      ],
+      "quality": "full_manual_near_top"
+    },
+    {
+      "image_no": 5,
+      "file": "WIN_20261016_01_03_16_Pro.jpg",
+      "p1": 2050,
+      "p10": 727,
+      "lens_cm": 12.0,
+      "bbox_px": [
+        780,
+        0,
+        1240,
+        755
+      ],
+      "quality": "top_clipped"
+    },
+    {
+      "image_no": 6,
+      "file": "WIN_20261016_01_05_13_Pro.jpg",
+      "p1": 2310,
+      "p10": 650,
+      "lens_cm": 5.0,
+      "bbox_px": [
+        260,
+        0,
+        1450,
+        900
+      ],
+      "quality": "top_clipped_lower_occluded"
+    }
+  ],
+  "arm_piecewise_segments": [
+    {
+      "p1_interval": [
+        1300,
+        1550
+      ],
+      "p10_start": 950,
+      "p10_slope": -0.296,
+      "lens_reference_start_cm": 75.0,
+      "lens_reference_slope": -0.12
+    },
+    {
+      "p1_interval": [
+        1550,
+        1800
+      ],
+      "p10_start": 876,
+      "p10_slope": -0.3,
+      "lens_reference_start_cm": 45.0,
+      "lens_reference_slope": -0.084
+    },
+    {
+      "p1_interval": [
+        1800,
+        2050
+      ],
+      "p10_start": 801,
+      "p10_slope": -0.296,
+      "lens_reference_start_cm": 24.0,
+      "lens_reference_slope": -0.048
+    },
+    {
+      "p1_interval": [
+        2050,
+        2310
+      ],
+      "p10_start": 727,
+      "p10_slope": -0.29615384615384616,
+      "lens_reference_start_cm": 12.0,
+      "lens_reference_slope": -0.026923076923076925
+    }
+  ],
+  "stage_timing": [
+    {
+      "forward_ms": 120,
+      "back_ms": 60,
+      "lateral_ms": 80,
+      "settle_ms": 500,
+      "arm_step_ms": 60,
+      "max_forward_steps": 40,
+      "max_back_steps": 3,
+      "max_lateral_steps": 12,
+      "wheels_enabled": true
+    },
+    {
+      "forward_ms": 80,
+      "back_ms": 60,
+      "lateral_ms": 60,
+      "settle_ms": 500,
+      "arm_step_ms": 70,
+      "max_forward_steps": 30,
+      "max_back_steps": 3,
+      "max_lateral_steps": 10,
+      "wheels_enabled": true
+    },
+    {
+      "forward_ms": 60,
+      "back_ms": 60,
+      "lateral_ms": 60,
+      "settle_ms": 600,
+      "arm_step_ms": 80,
+      "max_forward_steps": 25,
+      "max_back_steps": 2,
+      "max_lateral_steps": 8,
+      "wheels_enabled": true
+    },
+    {
+      "forward_ms": 60,
+      "back_ms": 60,
+      "lateral_ms": 60,
+      "settle_ms": 700,
+      "arm_step_ms": 90,
+      "max_forward_steps": 20,
+      "max_back_steps": 2,
+      "max_lateral_steps": 6,
+      "wheels_enabled": true
+    },
+    {
+      "forward_ms": 60,
+      "back_ms": 60,
+      "lateral_ms": 60,
+      "settle_ms": 700,
+      "arm_step_ms": 90,
+      "max_forward_steps": 0,
+      "max_back_steps": 0,
+      "max_lateral_steps": 0,
+      "wheels_enabled": false
+    }
+  ],
+  "paper_corners_px": [
+    [
+      816,
+      606
+    ],
+    [
+      1007,
+      594
+    ],
+    [
+      1050,
+      711
+    ],
+    [
+      838,
+      737
+    ]
+  ],
+  "paper_side_cm": 17.0,
+  "recomputed_paper_H_pixel_to_cm": [
+    [
+      0.1235603892615327,
+      -0.020750599723310836,
+      -88.2504142050843
+    ],
+    [
+      0.014031921331190593,
+      0.2233414145214515,
+      -146.79494500625114
+    ],
+    [
+      -0.0005816989780184926,
+      0.0016644034809200885,
+      1.0
+    ]
+  ],
+  "max_delta_from_retained_H": 9.094947017729282e-13,
+  "local_scale_paper_center_px": [
+    927.75,
+    662.0
+  ],
+  "local_cm_per_native_pixel_axis_xy": [
+    0.08303171196826425,
+    0.1351569241894423
+  ],
+  "note": "Paper H: SEARCH pose and paper plane only; no current S2 or arbitrary-object range inferred."
+}

@@ -1,0 +1,114 @@
+{
+  "calibration_id": "waste_robot_search_2026_10_13_paper_17cm_preliminary",
+  "calibration_type": "planar_homography_from_hand_drawn_paper_outline",
+  "status": "PRELIMINARY_NOT_VALIDATED",
+  "source_image": "WIN_20261013_21_15_05_Pro(1).jpg",
+  "camera_frame_width_px": 1920,
+  "camera_frame_height_px": 1080,
+  "reference": {
+    "type": "flat_square_paper_on_floor",
+    "side_cm": 17.0,
+    "camera_to_paper_center_measured_cm_range": [
+      92,
+      93
+    ],
+    "measurement_note": "User tape measurement, lens to paper center; not necessarily vertical height"
+  },
+  "search_pose": {
+    "s1_s2_angle_deg_reported": 195,
+    "gripper_height_cm_reported": [
+      56,
+      57
+    ],
+    "gripper_contact_pixel_at_grasp_pose": null
+  },
+  "floor_axis_definition": "origin at upper-left blue outlined paper corner in source frame; X goes to paper upper-right, Y to paper lower-left, centimeter coordinates (not robot frame)",
+  "paper_corners_pixel_tl_tr_br_bl": [
+    [
+      816,
+      606
+    ],
+    [
+      1007,
+      594
+    ],
+    [
+      1050,
+      711
+    ],
+    [
+      838,
+      737
+    ]
+  ],
+  "paper_corners_ground_cm_tl_tr_br_bl": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      17.0,
+      0.0
+    ],
+    [
+      17.0,
+      17.0
+    ],
+    [
+      0.0,
+      17.0
+    ]
+  ],
+  "homography_pixel_to_floor_cm": [
+    [
+      0.12356038926153347,
+      -0.020750599723310913,
+      -88.25041420508491
+    ],
+    [
+      0.01403192133119075,
+      0.2233414145214528,
+      -146.79494500625205
+    ],
+    [
+      -0.0005816989780184921,
+      0.0016644034809201015,
+      1.0
+    ]
+  ],
+  "homography_floor_cm_to_pixel": [
+    [
+      16.769893390578975,
+      -4.522976168323976,
+      816.0
+    ],
+    [
+      2.558816721658187,
+      2.589894116739358,
+      606.0
+    ],
+    [
+      0.005496126388214417,
+      -0.006941639397831503,
+      1.0
+    ]
+  ],
+  "paper_center_pixel_approx": [
+    927.75,
+    662.0
+  ],
+  "validity": {
+    "floor_plane_only": true,
+    "same_camera_intrinsics_pose_and_frame_geometry_required": true,
+    "use_near_paper_only_until_validated": true,
+    "does_not_determine_true_object_3d_dimensions_or_distance_to_object_surface": true,
+    "robot_grasp_target_calibrated": false
+  },
+  "warnings": [
+    "Corners were inferred from a blue hand-drawn line rather than measured actual paper corners.",
+    "Single square at one floor position gives exact four-point fit but no independent estimate of real-world error.",
+    "Do not apply directly to pixel center of tall object bounding boxes: that is not a floor point.",
+    "Do not use for autonomous movement until checked on multiple independent markers.",
+    "Do not use if camera arm pose, crop, resolution, optical zoom/focus settings or floor orientation change without re-evaluation."
+  ]
+}

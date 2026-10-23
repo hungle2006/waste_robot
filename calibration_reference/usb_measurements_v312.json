@@ -1,0 +1,123 @@
+{
+  "distance_definition": "camera_lens_to_bottle",
+  "frame_size": [
+    1920,
+    1080
+  ],
+  "manual_pixel_annotations": true,
+  "independent_validation": false,
+  "samples": [
+    {
+      "image_no": 1,
+      "file": "WIN_20261016_00_50_07_Pro.jpg",
+      "p1": 1300,
+      "p10": 950,
+      "lens_cm": 60.0,
+      "bbox_px": [
+        942,
+        540,
+        1052,
+        751
+      ],
+      "quality": "lower_occluded",
+      "bytes": 263432,
+      "sha256": "b5102b72e36eaebf1b6a033dcb756557b4eab9c94ba224e5ea791f10cae9cee2"
+    },
+    {
+      "image_no": 2,
+      "file": "WIN_20261016_00_50_48_Pro.jpg",
+      "p1": 1300,
+      "p10": 950,
+      "lens_cm": 75.0,
+      "bbox_px": [
+        947,
+        402,
+        1046,
+        621
+      ],
+      "quality": "full_manual",
+      "bytes": 279456,
+      "sha256": "bd71ecebf29b92952847b199c1d319183ebefb47b14267e5ea8854f77eb28ff4"
+    },
+    {
+      "image_no": 3,
+      "file": "WIN_20261016_00_52_00_Pro.jpg",
+      "p1": 1300,
+      "p10": 950,
+      "lens_cm": 90.0,
+      "bbox_px": [
+        974,
+        285,
+        1055,
+        448
+      ],
+      "quality": "full_manual",
+      "bytes": 315085,
+      "sha256": "f67630358340bf407eeeb6eb684ab74fa697246c8624236d91b6bd1014531b2d"
+    },
+    {
+      "image_no": 4,
+      "file": "WIN_20261016_00_55_48_Pro.jpg",
+      "p1": 1550,
+      "p10": 876,
+      "lens_cm": 45.0,
+      "bbox_px": [
+        918,
+        28,
+        1075,
+        454
+      ],
+      "quality": "full_manual_near_top",
+      "bytes": 296410,
+      "sha256": "7f2273386bc881bded7caa5798ce591d7faceb3163a34c672dfe0db699c372fc"
+    },
+    {
+      "image_no": 7,
+      "file": "WIN_20261016_01_19_13_Pro.jpg",
+      "p1": 1800,
+      "p10": 801,
+      "lens_cm": 24.0,
+      "bbox_px": [
+        947,
+        28,
+        1202,
+        790
+      ],
+      "quality": "full_manual_near_top",
+      "bytes": 323451,
+      "sha256": "ec402045bfcdc77c4c6319562e0ca15fd7eeac9b32563332c0b35934f0e7fd61"
+    },
+    {
+      "image_no": 5,
+      "file": "WIN_20261016_01_03_16_Pro.jpg",
+      "p1": 2050,
+      "p10": 727,
+      "lens_cm": 12.0,
+      "bbox_px": [
+        780,
+        0,
+        1240,
+        755
+      ],
+      "quality": "top_clipped",
+      "bytes": 383244,
+      "sha256": "00fa821378c3363257da00be7da55a490d4ba56e430fc3998efa7fe6fd6465b2"
+    },
+    {
+      "image_no": 6,
+      "file": "WIN_20261016_01_05_13_Pro.jpg",
+      "p1": 2310,
+      "p10": 650,
+      "lens_cm": 5.0,
+      "bbox_px": [
+        260,
+        0,
+        1450,
+        900
+      ],
+      "quality": "top_clipped_lower_occluded",
+      "bytes": 417493,
+      "sha256": "56d1254795ffbc84d3fe4bab258cac3ac0f7e94a916e71a75aac9ebd1ca0c14e"
+    }
+  ]
+}
